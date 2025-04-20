@@ -5,7 +5,7 @@ import Image from "next/image"
 import { useState } from "react"
 
 import { NavItem } from "@/components/nav-item"
-import { ProductCard } from "@/components/Product-Card"
+import { ProductCard } from "@/components/product-card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -176,7 +176,7 @@ export default function Dashboard() {
               href="/products/infinite-staircase"
             />
 
-<ProductCard
+            <ProductCard
               title="Vecna: Eve of Ruin Digital + Physical Bundle"
               price="$69.95"
               inventory={25}
