@@ -3,6 +3,20 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --primary: #DC2626;
+  --primary-foreground: #ffffff;
+  --muted: #404040;
+  --muted-foreground: #a3a3a3;
+  --border: #27272a;
+}
+
+@theme {
+  --color-magic-red: #E8443C;
+  --color-magic-iron-1: #1B1B1B;
+  --color-magic-iron-2: #222222;
+  --color-magic-back: #161616;
+  --color-magic-border-1: #323232;
+  --color-magic-border-2: #4E4E4E;
 }
 
 @theme inline {
@@ -20,7 +34,7 @@
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  color: rgb(var(--foreground));
+  background: rgb(var(--background));
   font-family: Arial, Helvetica, sans-serif;
 }
