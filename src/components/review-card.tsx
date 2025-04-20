@@ -1,5 +1,8 @@
-import { Star } from "lucide-react"
+"use client"
+
+import { ChevronDown, ChevronUp, Star } from "lucide-react"
 import Image from "next/image"
+import { useState } from "react"
 
 export interface ReviewCardProps {
   title: string
@@ -10,6 +13,17 @@ export interface ReviewCardProps {
   reviewCount: number
   imageUrl: string
   ratingDistribution?: number[]
+  // New props for individual reviews
+  reviews?: ReviewItemProps[]
+}
+
+export interface ReviewItemProps {
+  id: string | number
+  userName: string
+  userAvatar: string
+  comment: string
+  rating: number
+  date: string
 }
 
 export function ReviewCard({
@@ -21,7 +35,10 @@ export function ReviewCard({
   reviewCount,
   imageUrl,
   ratingDistribution = [80, 15, 3, 1, 1],
+  reviews = [],
 }: ReviewCardProps) {
+  const [showDetails, setShowDetails] = useState(false)
+
   // Generate stars based on rating
   const fullStars = Math.floor(rating)
   const hasHalfStar = rating % 1 >= 0.5
@@ -69,6 +86,74 @@ export function ReviewCard({
 
           <div className="text-sm text-zinc-400 mt-2">{reviewCount.toLocaleString()}</div>
         </div>
+      </div>
+
+      {/* Review details toggle button */}
+      <div className="text-center py-4 border-t border-zinc-800">
+        <button
+          className="text-zinc-400 hover:text-white flex items-center justify-center mx-auto"
+          onClick={() => setShowDetails(!showDetails)}
+        >
+          {showDetails ? (
+            <>
+              Hide details <ChevronUp className="ml-1 h-4 w-4" />
+            </>
+          ) : (
+            <>
+              Click to see more details <ChevronDown className="ml-1 h-4 w-4" />
+            </>
+          )}
+        </button>
+      </div>
+
+      {/* Expanded review details */}
+      {showDetails && (
+        <div className="border-t border-zinc-800 px-6 py-4 space-y-6">
+          {reviews && reviews.length > 0 ? (
+            reviews.map((review) => (
+              <ReviewItem
+                key={review.id}
+                userName={review.userName}
+                userAvatar={review.userAvatar}
+                comment={review.comment}
+                rating={review.rating}
+                date={review.date}
+              />
+            ))
+          ) : (
+            <div className="text-center py-4 text-zinc-400">No individual reviews available</div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function ReviewItem({ userName, userAvatar, comment, rating, date }: Omit<ReviewItemProps, "id">) {
+  return (
+    <div className="flex items-start gap-4 py-4">
+      <div className="flex-shrink-0">
+        <div className="h-10 w-10 rounded-full overflow-hidden">
+          <Image
+            src={userAvatar || "/placeholder.svg?height=40&width=40"}
+            alt={userName}
+            width={40}
+            height={40}
+            className="object-cover"
+          />
+        </div>
+      </div>
+      <div className="flex-grow">
+        <div className="flex justify-between items-center mb-2">
+          <h4 className="font-medium">{userName}</h4>
+          <div className="flex">
+            {[...Array(5)].map((_, i) => (
+              <Star key={i} className={`w-5 h-5 ${i < rating ? "fill-yellow-500" : "fill-zinc-700"}`} strokeWidth={1} />
+            ))}
+          </div>
+        </div>
+        <p className="text-zinc-300 mb-2">"{comment}"</p>
+        <p className="text-sm text-zinc-400">Post On: {date}</p>
       </div>
     </div>
   )

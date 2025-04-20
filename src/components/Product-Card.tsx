@@ -23,7 +23,7 @@ export function ProductCard({ title, price, inventory, imageUrl, href }: Product
             <div className="flex items-center gap-2">
               <Package className={`h-5 w-5 ${isOutOfStock ? "text-red-500" : "text-zinc-400"}`} />
               <span className={`text-sm ${isOutOfStock ? "text-red-500" : "text-zinc-400"}`}>
-                {isOutOfStock ? "Out of stock" : `Total remining ${inventory} pieces`}
+                {isOutOfStock ? "Out of stock" : `Total remaining ${inventory} pieces`}
               </span>
             </div>
             <Button variant="ghost" size="icon" className="text-zinc-400">

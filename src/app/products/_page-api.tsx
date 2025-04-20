@@ -2,7 +2,7 @@
 
 import { Bell, ChevronDown, Filter, Plus, Search } from "lucide-react"
 import Image from "next/image"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 
 import { NavItem } from "@/components/nav-item"
 import { ProductCard } from "@/components/product-card"
@@ -20,9 +20,60 @@ import {
   TruckIcon,
   UserIcon,
 } from "@/components/ui/icons"
+import { type Product, getProducts, searchProducts } from "@/lib/api"
 
 export default function ProductsPage() {
   const [searchQuery, setSearchQuery] = useState("")
+  const [products, setProducts] = useState<Product[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  // Fetch products on initial load
+  useEffect(() => {
+    async function loadProducts() {
+      setIsLoading(true)
+      setError(null)
+
+      try {
+        const response = await getProducts()
+        if (response.success && response.data) {
+          setProducts(response.data)
+        } else {
+          setError(response.error || "Failed to load products")
+        }
+      } catch (err) {
+        setError("An unexpected error occurred")
+        console.error(err)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadProducts()
+  }, [])
+
+  // Handle search
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(async () => {
+      if (searchQuery) {
+        setIsLoading(true)
+        const response = await searchProducts(searchQuery)
+        if (response.success && response.data) {
+          setProducts(response.data)
+        }
+        setIsLoading(false)
+      } else {
+        // If search is cleared, load all products
+        const response = await getProducts()
+        if (response.success && response.data) {
+          setProducts(response.data)
+        }
+        setIsLoading(false)
+      }
+    }, 500)
+
+    return () => clearTimeout(delayDebounceFn)
+  }, [searchQuery])
 
   return (
     <div className="flex h-screen bg-magic-back text-white p-4">
@@ -122,84 +173,39 @@ export default function ProductsPage() {
                 <Plus className="h-4 w-4 mr-2" />
                 Add
               </Button>
-
             </div>
 
           </div>
+          
+          {isLoading ? (
+            <div className="flex justify-center items-center h-64">
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-600"></div>
+            </div>
+          ) : error ? (
+            <div className="text-center py-10">
+              <p className="text-red-500 mb-4">{error}</p>
+              <Button onClick={() => window.location.reload()}>Retry</Button>
+            </div>
+          ) : products.length === 0 ? (
+            <div className="text-center py-10">
+              <p className="text-zinc-400 mb-4">No products found</p>
+              {searchQuery && <Button onClick={() => setSearchQuery("")}>Clear Search</Button>}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {products.map((product) => (
+                <ProductCard
+                  key={product.id}
+                  title={product.title}
+                  price={product.price}
+                  inventory={product.inventory}
+                  imageUrl={product.imageUrl}
+                  href={`/products/${product.id}`}
+                />
+              ))}
+            </div>
+          )}
 
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            <ProductCard
-              title="2024 Digital & Physical Core Rulebook Bundle"
-              price="$179.97"
-              inventory={2704}
-              imageUrl="/placeholder.svg?height=500&width=400"
-              href="/products/core-rulebook-bundle"
-            />
-
-            <ProductCard
-              title="2024 Dungeon Master's Guide Digital + Physical Bundle"
-              price="$59.99"
-              inventory={142}
-              imageUrl="/placeholder.svg?height=400&width=400"
-              href="/products/dungeon-masters-guide"
-            />
-
-            <ProductCard
-              title="2024 Player's Handbook Digital + Physical Bundle"
-              price="$59.99"
-              inventory={573}
-              imageUrl="/placeholder.svg?height=400&width=400"
-              href="/products/players-handbook"
-            />
-
-            <ProductCard
-              title="Vecna: Eve of Ruin Digital + Physical Bundle"
-              price="$69.95"
-              inventory={25}
-              imageUrl="/placeholder.svg?height=400&width=400"
-              href="/products/vecna-eve-of-ruin"
-            />
-
-            <ProductCard
-              title="Quests from the Infinite Staircase Digital + Physical Bundle"
-              price="$69.95"
-              inventory={0}
-              imageUrl="/placeholder.svg?height=400&width=400"
-              href="/products/infinite-staircase"
-            />
-            
-            <ProductCard
-              title="Quests from the Infinite Staircase Digital + Physical Bundle"
-              price="$69.95"
-              inventory={0}
-              imageUrl="/placeholder.svg?height=400&width=400"
-              href="/products/infinite-staircase"
-            />
-
-            <ProductCard
-              title="Vecna: Eve of Ruin Digital + Physical Bundle"
-              price="$69.95"
-              inventory={25}
-              imageUrl="/placeholder.svg?height=400&width=400"
-              href="/products/vecna-eve-of-ruin"
-            />
-
-            <ProductCard
-              title="Quests from the Infinite Staircase Digital + Physical Bundle"
-              price="$69.95"
-              inventory={0}
-              imageUrl="/placeholder.svg?height=400&width=400"
-              href="/products/infinite-staircase"
-            />
-            
-            <ProductCard
-              title="Quests from the Infinite Staircase Digital + Physical Bundle"
-              price="$69.95"
-              inventory={0}
-              imageUrl="/placeholder.svg?height=400&width=400"
-              href="/products/infinite-staircase"
-            />
-          </div>
         </main>
       </div>
     </div>
