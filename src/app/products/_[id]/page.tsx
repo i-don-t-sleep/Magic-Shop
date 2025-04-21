@@ -7,7 +7,7 @@ import { useParams } from "next/navigation"
 import { useEffect, useState } from "react"
 
 import { Button } from "@/components/ui/button"
-import { type Product, getProductById } from "@/lib/api"
+import { type Product, getProductById } from "@/lib/phpAPI/api"
 
 export default function ProductDetail() {
   const { id } = useParams() as { id: string }
