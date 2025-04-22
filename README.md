@@ -2,6 +2,8 @@
 - ปรับ secure login ให้ hacker เดายาก
 - ปรับสี css อื่นๆให้สวย
 
+- *** อาจจะปรับต่อ คงยังไม่ merge เพราะยังจัด folder ไม่เรียบร้อย แต่เอาไปใช้ได้อยู่
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
