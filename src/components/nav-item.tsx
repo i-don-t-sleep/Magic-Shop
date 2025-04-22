@@ -1,24 +1,22 @@
 import type React from "react"
-import Link from "next/link"
 
 export interface NavItemProps {
   icon: React.ReactNode
   label: string
-  href: string
+  onClick: () => void
   active?: boolean
 }
 
-export function NavItem({ icon, label, href, active = false }: NavItemProps) {
+export function NavItem({ icon, label, onClick, active = false }: NavItemProps) {
   return (
-    <Link
-      href={href}
-      className={`flex items-center gap-3 px-2 py-2 rounded-[14] transition-colors ${
-        active ? " bg-magic-red text-white " : "text-zinc-400 hover:text-white hover:bg-zinc-800"
+    <button
+      onClick={onClick}
+      className={`w-full text-left flex items-center gap-3 px-6 py-2 rounded-[14] transition-colors ${
+        active ? " bg-magic-red text-black " : "text-zinc-10 hover:bg-zinc-700"
       }`}
     >
-
       <span className="w-5 h-5">{icon}</span>
-      <span>{label}</span>
-    </Link>
+      <span className="text-sm">{label}</span>
+    </button>
   )
 }

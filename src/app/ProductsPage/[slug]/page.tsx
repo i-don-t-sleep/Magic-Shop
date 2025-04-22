@@ -81,7 +81,7 @@ export default function ProductDetail() {
     <div className="min-h-screen bg-black text-white p-4">
       <div className="max-w-7xl mx-auto">
         <div className="mb-6">
-          <Link href="/products" className="inline-flex items-center text-zinc-400 hover:text-white">
+          <Link href="/MainPage" className="inline-flex items-center text-zinc-400 hover:text-white">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Products
           </Link>

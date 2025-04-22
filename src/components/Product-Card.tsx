@@ -26,7 +26,7 @@ export function ProductCard({ title, price, inventory, imageUrl, href }: Product
                 {isOutOfStock ? "Out of stock" : `Total remaining ${inventory} pieces`}
               </span>
             </div>
-            <Button variant="ghost" size="icon" className="text-zinc-400">
+            <Button variant="ghost" size="etc" className="text-zinc-400">
               <MoreVertical className="h-5 w-5" />
             </Button>
           </div>

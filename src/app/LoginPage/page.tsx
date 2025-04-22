@@ -29,19 +29,14 @@ export default function LoginPage() {
     const data = await res.json()
   
     if (data.success) {
-      setUsernameError(false)
-      setPasswordError(false)
       router.push('/MainPage')
       showSuccessToast('Login Complete!')
     } else {
       showErrorToast(data.message)
 
       const message = data.message.toLowerCase()
-      if (data.field === 'username') {
+      if (data.field === 'error') {
         setUsernameError(true)
-        setPasswordError(false)
-      } else if (data.field === 'password') {
-        setUsernameError(false)
         setPasswordError(true)
       } else {
         setUsernameError(false)

@@ -45,7 +45,7 @@ export function ReviewCard({
   const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0)
 
   return (
-    <div className="bg-zinc-900 rounded-lg overflow-hidden">
+    <div className="bg-gradient-to-b from-[#2a2a2a] to-[#1a1a1a] rounded-lg overflow-hidden">
       <div className="p-6 grid grid-cols-1 md:grid-cols-[200px_1fr_200px] gap-6">
         <div className="flex justify-center">
           <Image src={imageUrl || "/placeholder.svg"} alt={title} width={160} height={200} className="object-contain" />
