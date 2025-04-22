@@ -1,6 +1,6 @@
 import { connectDB } from '@/lib/db'
 import { NextRequest } from 'next/server'
-import bcrypt from 'bcryptjs' //install is; ' npm install bcryptjs '
+import bcrypt from 'bcryptjs'
 
 export async function POST(req: NextRequest) {
   const { username, password } = await req.json()
@@ -11,20 +11,14 @@ export async function POST(req: NextRequest) {
 
   try {
     const db = await connectDB()
-    const [rows]: any = await db.query('SELECT * FROM Admins WHERE Username = ?', [username])
+    const [rows]: any = await db.query('SELECT Password FROM Admins WHERE Username = ?', [username])
 
-    if (rows.length === 0) {
-      return Response.json({ success: false, field: 'username', message: 'Username not found.' })
-    }
-
-    const isMatch = await bcrypt.compare(password, rows[0].Password)
-    if (!isMatch) {
-      return Response.json({ success: false, field: 'password', message: 'Incorrect password.' })
+    if (rows.length === 0 || !(await bcrypt.compare(password, rows[0].Password))) {
+      return Response.json({ success: false, field: 'error', message: 'Invalid username or password' }, { status: 401 })
     }
 
     return Response.json({ success: true, user: rows[0] })
   } catch (error: any) {
-    return Response.json({ success: false, message: 'Database error: ' + error.message })
+    return Response.json({ success: false, message: 'Database error: ' + error.message }, { status: 500 })
   }
 }
-
