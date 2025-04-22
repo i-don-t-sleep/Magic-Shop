@@ -4,6 +4,16 @@
 
 - *** อาจจะปรับต่อ คงยังไม่ merge เพราะยังจัด folder ไม่เรียบร้อย แต่เอาไปใช้ได้อยู่
 
+เกี่ยวกับ database
+1. ให้สร้าง files ชื่อ .env.local ขึ้นมา
+2. ใส่พวกนี้ในไฟล์
+DB_HOST=localhost
+DB_USER=[User]
+DB_PASS=[Pass]
+DB_NAME=[NameDB]
+พวก [] ใส่ตาม phpMyAdmin เลยที่สร้าง
+อาจจะใช้ไฟล์ sql นี้ก็ได้ ที่ใช้อยู่ตอนนี้ ดูในไฟล์ SQL_TEMP
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
