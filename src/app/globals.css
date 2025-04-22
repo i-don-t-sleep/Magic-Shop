@@ -17,6 +17,13 @@
   --color-magic-back: #161616;
   --color-magic-border-1: #323232;
   --color-magic-border-2: #4E4E4E;
+
+  --toast-bg-color: #1f2937;
+  --toast-fg-color: rgb(255, 255, 255);
+  --toast-box-shadow-color: rgba(0, 0, 0, 0.4);
+  --toast-hover-bg-color: rgb(87, 87, 87);
+
+  --scrollbar-hover: #f98585;
 }
 
 @theme inline {
@@ -53,19 +60,48 @@ body {
 /* normal_toast */
 
 div.normal_toast {
-  background-color: #1f2937;
-  color: rgb(255, 255, 255);
+  background-color: var(--toast-bg-color);
+  color: var(--toast-fg-color);
   /* border: 1px solid #aaaaaa; */
   border-radius: 12px;
   padding: 14px 20px;
   font-family: Poppins, sans-serif;
   font-size: 15px;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 4px 14px var(--toast-box-shadow-color);
   transition: all 0.3s ease;
   /*user-select: none;*/
 }
 
 
 .normal_toast:hover {
-  background-color: rgb(87, 87, 87);
+  background-color: var(--toast-hover-bg-color);
+}
+
+/* ------ Scrollbar base ------ */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: var(--background);
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background-color: var(--color-magic-red);
+  border-radius: 10px;
+  border: 2px solid var(--background);
+}
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--scrollbar-hover);
+  border-color: var(--background);
+}
+
+.force-scrollbar-zero::-webkit-scrollbar {
+  width: 0px;
+  height: 0px;
+}
+
+.force-scrollbar-zero {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE */
 }
