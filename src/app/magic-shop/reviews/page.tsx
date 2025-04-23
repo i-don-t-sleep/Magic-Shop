@@ -94,16 +94,33 @@ let reviews = [
   },
 ]
 
-export function Header_ReviewsPage({
+export default function reviewsPage() {
+  const [searchQuery, setSearchQuery] = useState("")
+
+  return (
+    <div className="pt-3 flex flex-col h-full overflow-hidden">
+      <Header searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
+      <div className="flex width=120% h-screen overflow-y-auto scrollbar-overlay">
+        <Body searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
+      </div>
+    </div>
+  )
+}
+
+
+
+export function Header({
   searchQuery,
   setSearchQuery,
+  classN = 'px-6 pb-3',
 }: {
   searchQuery: string
   setSearchQuery: (v: string) => void
+  classN?: string
 }) {
   return (
     <main>
-      <div className="flex justify-between ">
+      <div className={`${classN} flex justify-between`}>
         <div className="w-full max-w-md">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
@@ -127,19 +144,21 @@ export function Header_ReviewsPage({
   )
 }
 
-export function Body_ReviewsPage({
+export function Body({
   searchQuery,
   setSearchQuery,
+  classN = 'px-6 pb-3',
 }: {
   searchQuery: string
   setSearchQuery: (v: string) => void
+  classN?: string
 }) {
   const filteredReviews = reviews.filter((review) =>
     review.title.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
   return (
-    <div className="space-y-4">
+    <div className={`${classN} space-y-4`}>
       {filteredReviews.length === 0 ? (
         <div className="text-center py-10">
           <p className="text-zinc-400 mb-4">No reviews found</p>

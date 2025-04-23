@@ -5,6 +5,7 @@ import { ArrowLeft, Heart, Package, ShoppingCart } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import { useParams } from "next/navigation"
+import { useRouter } from "next/navigation"
 
 import { Button } from "@/components/ui/button"
 
@@ -21,6 +22,7 @@ interface ProductDataMap {
 }
 
 export default function ProductDetail() {
+  const router = useRouter()
   const { slug } = useParams() as { slug: string }
 
   // This would normally come from a database or API
@@ -31,7 +33,7 @@ export default function ProductDetail() {
       inventory: 2704,
       description:
         "Get the complete set of core rulebooks for Dungeons & Dragons, including the Player's Handbook, Dungeon Master's Guide, and Monster Manual. This bundle includes both digital and physical copies.",
-      imageUrl: "/placeholder.svg?height=500&width=400",
+      imageUrl: "cf27466446e6da568b1eae990514f787.png",
     },
     "dungeon-masters-guide": {
       title: "2024 Dungeon Master's Guide Digital + Physical Bundle",
@@ -39,7 +41,7 @@ export default function ProductDetail() {
       inventory: 142,
       description:
         "The essential guide for Dungeon Masters. Learn how to create adventures, build worlds, and run great games. Includes both digital and physical copies.",
-      imageUrl: "/placeholder.svg?height=400&width=400",
+      imageUrl: "dcfbd4a80d735ed524c31123e084659c.png",
     },
     "players-handbook": {
       title: "2024 Player's Handbook Digital + Physical Bundle",
@@ -47,7 +49,7 @@ export default function ProductDetail() {
       inventory: 573,
       description:
         "Create heroic characters for the world's greatest roleplaying game. This bundle includes both digital and physical copies of the Player's Handbook.",
-      imageUrl: "/placeholder.svg?height=400&width=400",
+      imageUrl: "dc84620855214ac09da2632bd939da1f.png",
     },
     "vecna-eve-of-ruin": {
       title: "Vecna: Eve of Ruin Digital + Physical Bundle",
@@ -55,7 +57,7 @@ export default function ProductDetail() {
       inventory: 25,
       description:
         "Face the ultimate lich in this epic adventure that spans the multiverse. Includes both digital and physical copies of the adventure.",
-      imageUrl: "/placeholder.svg?height=400&width=400",
+      imageUrl: "036c70a2a0fc58eb24a89b0d7c4dcdab.png",
     },
     "infinite-staircase": {
       title: "Quests from the Infinite Staircase Digital + Physical Bundle",
@@ -63,7 +65,7 @@ export default function ProductDetail() {
       inventory: 0,
       description:
         "Explore the mysterious Infinite Staircase in this collection of adventures. Includes both digital and physical copies of the adventure.",
-      imageUrl: "/placeholder.svg?height=400&width=400",
+      imageUrl: "2c4c88e9ecc12670d82aece0ec209b09.png",
     },
   }
 
@@ -78,19 +80,22 @@ export default function ProductDetail() {
   const isOutOfStock = product.inventory === 0
 
   return (
-    <div className="min-h-screen bg-black text-white p-4">
+    <div className="min-h-screen text-white p-4">
       <div className="max-w-7xl mx-auto">
         <div className="mb-6">
-          <Link href="/MainPage" className="inline-flex items-center text-zinc-400 hover:text-white">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Products
-          </Link>
+        <button
+          onClick={() => router.back()}
+          className="inline-flex items-center text-zinc-400 hover:text-white transition-colors"
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back to Products
+        </button>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <div className="aspect-square relative rounded-lg overflow-hidden">
             <Image
-              src={product.imageUrl || "/placeholder.svg"}
+              src={`/api/image?path=products/${product.imageUrl}`}
               alt={product.title}
               fill
               sizes="(max-width: 768px) 100vw, 50vw"
