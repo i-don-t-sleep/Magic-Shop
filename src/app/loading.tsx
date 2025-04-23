@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
 
-export default function Loading() {
+export default function loading() {
   const [dots, setDots] = useState('')
 
   useEffect(() => {

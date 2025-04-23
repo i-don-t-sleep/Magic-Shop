@@ -1,30 +1,35 @@
+import { MoreVertical } from "lucide-react"
 import * as React from "react"
 
 const buttonVariants = {
   variant: {
-    default: "bg-red-600 text-white hover:bg-red-700 focus-visible:outline-red-600",
-    outline: "text-white bg-gradient-to-b from-[#2a2a2a] to-[#1a1a1a] hover:from-[#d10000] hover:to-red-500 hover:bg-gradient-to-b transition-all duration-100",
+    default: "bg-gray-500 text-white hover:bg-magic-red focus-visible:outline-red-600 rounded-xl duration-100",
+    outline: "text-white bg-gradient-to-b from-[#2a2a2a] to-[#1a1a1a] hover:from-[#d10000] hover:to-red-500 hover:bg-gradient-to-b transition-all duration-100 rounded-xl",
+    moreVert: "text-white bg-magic-iron-1 hover:bg-gray-800 transition-all duration-10 rounded-sm",
     ghost: "hover:text-white",
+    ClickButton: "text-white bg-[#373737] hover:bg-red-600 transition-all duration-10 rounded-sm",
   },
   size: {
     default: "h-10 px-4 py-2",
     sm: "h-9 rounded-md px-3",
     lg: "h-11 rounded-md px-8",
     icon: "h-10 w-10",
-    etc: "h-10 w-5",
+    etc: "h-7 w-7 rounded-md",
   },
 } as const
 
 const buttonBorderVariants = {
   variant: {
-    outline: "bg-gradient-to-b from-[#4E4E4E] to-[#323232] peer-hover:bg-none",
+    outline: "bg-gradient-to-b from-[#4E4E4E] to-[#323232] peer-hover:bg-none rounded-xl",
+    moreVert: "bg-gradient-to-b from-[#4E4E4E] to-[#323232] rounded-sm",
+    ClickButton: "bg-gradient-to-b from-[#4E4E4E] to-[#323232] rounded-sm",
   },
   size: {
-    outline: "relative p-[1px] rounded-xl",
+    outline: "p-[1px] rounded-xl",
+    moreVert: "p-[1px] rounded-sm",
+    ClickButton: "p-[1px] rounded-xl",
   },
 } as const
-
-const transition_color_delay = 300
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: keyof typeof buttonVariants.variant
@@ -48,8 +53,8 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         className={`
           ${hasBorder ? "peer" : ""}
           relative z-10 inline-flex items-center justify-center
-          rounded-xl text-sm font-medium ring-offset-background
-          transition-colors duration-${transition_color_delay} focus-visible:outline-none focus-visible:ring-2
+          text-sm font-medium ring-offset-background
+          transition-colors focus-visible:outline-none focus-visible:ring-2
           focus-visible:ring-ring focus-visible:ring-offset-2
           disabled:pointer-events-none disabled:opacity-50
           ${variantClasses} ${sizeClasses} ${className || ""}
@@ -61,13 +66,13 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
     if (hasBorder) {
       return (
-        <div className={`${borderSizeClass} relative`}>
+        <div className={`inline-flex items-center justify-center ${borderSizeClass} w-fit h-fit relative`}>
           {button}
           <div
             className={`
-              absolute inset-0 rounded-xl p-[1px]
+              absolute inset-0
               ${borderClass}
-              transition-all duration-${transition_color_delay}
+              transition-all
               pointer-events-none
               z-0
             `}
