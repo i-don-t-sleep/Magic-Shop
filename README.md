@@ -6,6 +6,20 @@
 - เปลี่ยนชื่อ _api เป็น api รวมถึง lib ย้ายไปนอก app แต่อยู่ใน src อยุ่
 - ใช้ db.ts ในการเชื่อมต่อ mySQL และ api จะมี LoginAPI สำหรับการใช้งานจะอยู่ใน route.ts ตัวนั้น ตัวอย่างการ query
 
+
+
+middleware ควรใส่มาพวก backend กัน user เกลี้ยน
+
+export function middleware(request: NextRequest) {
+  const isLoggedIn = request.cookies.get("auth-token")
+
+  if (!isLoggedIn && request.nextUrl.pathname.startsWith("/main")) {
+    return NextResponse.redirect(new URL("/login", request.url))
+  }
+
+  return NextResponse.next()
+}
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started

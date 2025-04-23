@@ -10,8 +10,6 @@ import {
 } from "@/components/ui/icons"
 import { Button } from "@/components/ui/button"
 
-import { Header_ProductsPage, Body_ProductsPage } from "@/app/ProductsPage/page"
-import { Header_ReviewsPage, Body_ReviewsPage } from "@/app/ReviewsPage/page"
 
 const titleMap: Record<string, string> = {
   dashboard: "Dashboard",
