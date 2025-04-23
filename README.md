@@ -12,7 +12,7 @@ DB_USER=[User]
 DB_PASS=[Pass]
 DB_NAME=[NameDB]
 พวก [] ใส่ตาม phpMyAdmin เลยที่สร้าง
-อาจจะใช้ไฟล์ sql นี้ก็ได้ ที่ใช้อยู่ตอนนี้ ดูในไฟล์ SQL_TEMP upload ใส่ phpMyAdmin จะได้ DB ใหม่ อันนี้จะเอาไปใช้กับ web ได้ (ใช้จริงอาจจะต้องเปลี่ยน แต่ตอนนี้เอามาแค่ใช้เทส)
+อาจจะใช้ไฟล์ sql นี้ก็ได้ ที่ใช้อยู่ตอนนี้ (MagicShop.sql) Upload ใส่ phpMyAdmin จะได้ DB ใหม่ อันนี้จะเอาไปใช้กับ web ได้ (ใช้จริงอาจจะต้องเปลี่ยน แต่ตอนนี้เอามาแค่ใช้เทส)
 
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
