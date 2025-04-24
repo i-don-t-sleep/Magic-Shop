@@ -45,10 +45,10 @@ export function ReviewCard({
   const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0)
 
   return (
-    <div className="bg-gradient-to-b from-[#2a2a2a] to-[#1a1a1a] rounded-lg overflow-hidden">
+    <div className="bg-gradient-to-b from-[#222222] to-[#1D1D1D] rounded-lg overflow-hidden">
       <div className="p-6 grid grid-cols-1 md:grid-cols-[200px_1fr_200px] gap-6">
         <div className="flex justify-center">
-          <Image src={imageUrl || "/placeholder.svg"} alt={title} width={160} height={200} className="object-contain" />
+          <Image src={`/api/image?path=products/${imageUrl}`} alt={title} width={1000} height={1000} className="object-contain" /> {/*Still not feasible*/}
         </div>
 
         <div>
@@ -135,7 +135,7 @@ function ReviewItem({ userName, userAvatar, comment, rating, date }: Omit<Review
       <div className="flex-shrink-0">
         <div className="h-10 w-10 rounded-full overflow-hidden">
           <Image
-            src={userAvatar || "/placeholder.svg?height=40&width=40"}
+            src={`/api/image?path=users/${userAvatar}`}
             alt={userName}
             width={40}
             height={40}

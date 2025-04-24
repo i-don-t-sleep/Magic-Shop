@@ -5,6 +5,7 @@ import { ChevronDown, Filter, Plus, Search } from "lucide-react"
 import { ProductCard } from "@/components/product-card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import Image from "next/image"
 
 export default function productsPage() {
   const [searchQuery, setSearchQuery] = useState("")
@@ -58,7 +59,6 @@ function Header({
 }
 
 function Body({ searchQuery, classN = 'px-6 pb-3' }: { searchQuery: string, classN?: string }) {
-  // ในอนาคตสามารถ filter product โดยใช้ searchQuery ได้
   return (
     <div className={`${classN} grid grid-cols-1 lg:grid-cols-3 gap-6`}>
       {/* ตัวอย่าง product card */}
@@ -98,6 +98,7 @@ function Body({ searchQuery, classN = 'px-6 pb-3' }: { searchQuery: string, clas
         href="/magic-shop/products/infinite-staircase"
       />
       {/* เพิ่ม ProductCard ได้ตามต้องการ */}
+      
     </div>
   )
 }
