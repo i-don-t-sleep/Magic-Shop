@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import Image from "next/image"
 import { Bell, ChevronLeft, ChevronRight } from "lucide-react"
 import { NavItem } from "@/components/nav-item"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import {
   GridIcon,
   ShoppingBagIcon,
@@ -20,9 +20,42 @@ import {
 import { Button } from "@/components/ui/button"
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
+  const router = useRouter()
+  const [profilePicture, setProfilePicture] = useState("unnamed.png")
+  const [displayName, setDisplayName] = useState("User")
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [fullCollapse, setFullCollapse] = useState(false)
+
+  useEffect(() => {
+    const getCookie = (name: string) => {
+      const match = document.cookie.match(new RegExp("(^| )" + name + "=([^;]+)"))
+      return match ? decodeURIComponent(match[2]) : null
+    }
   
+    const cookieData = getCookie("account-info")
+    if (!cookieData) return
+  
+    try {
+      const parsed = JSON.parse(cookieData)
+      setProfilePicture(`users/${parsed.profilePicture}` || "unnamed.png")
+      setDisplayName(parsed.username || "User")
+    } catch (err) {
+      console.error("Invalid cookie format:", err)
+      setProfilePicture("users/unnamed.png")
+      setDisplayName("User")
+    }
+  }, [])
+  
+
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/LogoutAPI', { method: 'GET' })
+      router.push('/LoginPage')
+    } catch (error) {
+      console.error("Logout failed", error)
+    }
+  }
+
   const pathname = usePathname()
   const titleMap: Record<string, string> = {
     "/magic-shop/dashboard": "Dashboard",
@@ -157,11 +190,11 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
             <div className="w-px h-10 bg-[#4E4E4E]" />
             <div className="flex items-center gap-4">
               <span className="text-base">
-                Hello, <span className="font-bold">Heart</span>
+                Hello, <span className="font-bold">{displayName}</span>
               </span>
-              <div className="h-10 w-10 rounded-full bg-zinc-700 overflow-hidden">
+              <div onClick={handleLogout} title="Click to Logout" className="h-10 w-10 rounded-full bg-zinc-700 overflow-hidden">
                 <Image
-                  src="/api/image?path=users/unnamed.png"
+                  src={`/api/image?path=${profilePicture}`}
                   alt="Profile"
                   width={40}
                   height={40}
