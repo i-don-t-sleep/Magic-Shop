@@ -97,6 +97,28 @@ function Body({ searchQuery, classN = 'px-6 pb-3' }: { searchQuery: string, clas
         imageUrl="2c4c88e9ecc12670d82aece0ec209b09.png"
         href="/magic-shop/products/infinite-staircase"
       />
+      <ProductCard
+        title="2024 Dungeon Master's Guide Digital + Physical Bundle"
+        price="$59.99"
+        inventory={142}
+        imageUrl="dcfbd4a80d735ed524c31123e084659c.png"
+        href="/magic-shop/products/dungeon-masters-guide"
+      />
+      <ProductCard
+        title="2024 Dungeon Master's Guide Digital + Physical Bundle"
+        price="$59.99"
+        inventory={142}
+        imageUrl="dcfbd4a80d735ed524c31123e084659c.png"
+        href="/magic-shop/products/dungeon-masters-guide"
+      />
+      <ProductCard
+        title="2024 Dungeon Master's Guide Digital + Physical Bundle"
+        price="$59.99"
+        inventory={142}
+        imageUrl="dcfbd4a80d735ed524c31123e084659c.png"
+        href="/magic-shop/products/dungeon-masters-guide"
+      />
+      
       {/* เพิ่ม ProductCard ได้ตามต้องการ */}
       
     </div>

@@ -32,17 +32,18 @@ export function ProductCard({ title, price, inventory, imageUrl, href }: Product
           </div>
           <Link href={href} className="block px-4 pb-4">
           <div className="aspect-square relative rounded-lg overflow-hidden mb-4">
-              <Image
+            <Image
                 src={`/api/image?path=products/${imageUrl}`}
                 alt={title}
-                fill
+                width={0}
+                height={0}
                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                className="object-cover"
-              />
-            </div>
-          <div className="w-full rounded-lg overflow-hidden mb-4">
+                style={{ width: '100%', height: 'auto' }}
+                className="object-contain"
+                unoptimized
+            />
           </div>
-            <h3 className="text-lg font-medium text-center mb-2">{title}</h3>
+            <h3 className="text-lg font-medium text-center mb-2 line-clamp-2 h-[3.25rem]">{title}</h3>
             <div className={`${isOutOfStock ? 'text-white bg-[#a20000] hover:bg-[#e70000] transition-all duration-10 rounded-lg p-3 text-center':'text-white bg-[#373737] hover:bg-magic-red transition-all duration-100 rounded-sm bg-zinc-800 rounded-lg p-3 text-center'}`}>
               <span className="text-xl font-bold" style={{
                   WebkitTextStroke: '0.5px #323232',
