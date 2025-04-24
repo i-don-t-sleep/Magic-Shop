@@ -5,10 +5,7 @@
 - เพิ่ม folder แยกกันชัดเจน
 - เปลี่ยนชื่อ _api เป็น api รวมถึง lib ย้ายไปนอก app แต่อยู่ใน src อยุ่
 - ใช้ db.ts ในการเชื่อมต่อ mySQL และ api จะมี LoginAPI สำหรับการใช้งานจะอยู่ใน route.ts ตัวนั้น ตัวอย่างการ query
-
-
-
-middleware ควรใส่มาพวก backend กัน user เกลี้ยน
+- ย้าย middleware ไปที่ MySQL
 
 export function middleware(request: NextRequest) {
   const isLoggedIn = request.cookies.get("auth-token")
