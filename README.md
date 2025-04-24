@@ -7,15 +7,8 @@
 - ใช้ db.ts ในการเชื่อมต่อ mySQL และ api จะมี LoginAPI สำหรับการใช้งานจะอยู่ใน route.ts ตัวนั้น ตัวอย่างการ query
 - ย้าย middleware ไปที่ MySQL
 
-export function middleware(request: NextRequest) {
-  const isLoggedIn = request.cookies.get("auth-token")
-
-  if (!isLoggedIn && request.nextUrl.pathname.startsWith("/main")) {
-    return NextResponse.redirect(new URL("/login", request.url))
-  }
-
-  return NextResponse.next()
-}
+ถ้าจะติดตตั้ง project เอานี้ไปเลย
+(https://drive.google.com/file/d/1_UQuYUKmzROgCg8N8mHHtSriQVeoX9Eq/view?usp=drive_link)
 
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
