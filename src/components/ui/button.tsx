@@ -8,6 +8,8 @@ const buttonVariants = {
     moreVert: "text-white bg-magic-iron-1 hover:bg-gray-800 transition-all duration-10 rounded-sm",
     ghost: "hover:text-white",
     ClickButton: "text-white bg-[#373737] hover:bg-red-600 transition-all duration-10 rounded-sm",
+    ClickOutButton: "text-white bg-[#a20000] hover:bg-[#e70000] transition-all duration-10 rounded-sm",
+    outStock: "bg-magic-red rounded-sm hover:bg-gray-800 transition-all duration-10",
   },
   size: {
     default: "h-10 px-4 py-2",
@@ -23,11 +25,13 @@ const buttonBorderVariants = {
     outline: "bg-gradient-to-b from-[#4E4E4E] to-[#323232] peer-hover:bg-none rounded-xl",
     moreVert: "bg-gradient-to-b from-[#4E4E4E] to-[#323232] rounded-sm",
     ClickButton: "bg-gradient-to-b from-[#4E4E4E] to-[#323232] rounded-sm",
+    outStock: "bg-[#E8443C] rounded-sm",
   },
   size: {
     outline: "p-[1px] rounded-xl",
     moreVert: "p-[1px] rounded-sm",
     ClickButton: "p-[1px] rounded-xl",
+    outStock: "p-[1px] rounded-xl",
   },
 } as const
 
