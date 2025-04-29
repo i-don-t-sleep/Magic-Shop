@@ -15,8 +15,11 @@ npm install
 [Make file .env.local here if u use MySQL (เอาไฟล์ SQL ไปลง phpMyAdmin ด้วย)]
 
 DB_HOST=localhost
+
 DB_USER=Heart
+
 DB_PASS=1234
+
 DB_NAME=MagicShop
 
 Method 2
