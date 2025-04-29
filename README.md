@@ -1,13 +1,26 @@
 อัพเดทพวก
-- LoginPage เพิ่ม Toast เข้ามาแทน alert ให้สวยขึ้น (อนาคตเดะจะปรับให้สวยกว่านี้)
-- อัพเดทความ secure ของ MySQL ตอนแรกมัน เจาะระบบง่าย ตอนนี้ทำให้มันกัน SQL injection กับพวกเด็กซน DevTools ได้
-- เปลี่ยนชื่อไฟล์เล็กน้อยพวก lording เป็น loading ไรงี้
-- เพิ่ม folder แยกกันชัดเจน
-- เปลี่ยนชื่อ _api เป็น api รวมถึง lib ย้ายไปนอก app แต่อยู่ใน src อยุ่
-- ใช้ db.ts ในการเชื่อมต่อ mySQL และ api จะมี LoginAPI สำหรับการใช้งานจะอยู่ใน route.ts ตัวนั้น ตัวอย่างการ query
-- ย้าย middleware ไปที่ MySQL
+- เพิ่มหน้าอื่นๆ ยังไม่ได้ ปรับแต่งเพิ่มจาก vzero
 
-ถ้าจะติดตตั้ง project เอานี้ไปเลย
+## วิธีติดตั้ง project
+Method 1
+
+[First clone this project on your vscode]
+
+git clone https://github.com/i-don-t-sleep/Magic-Shop
+
+[Open this repository and run command]
+
+npm install
+
+[Make file .env.local here if u use MySQL (เอาไฟล์ SQL ไปลง phpMyAdmin ด้วย)]
+
+DB_HOST=localhost
+DB_USER=Heart
+DB_PASS=1234
+DB_NAME=MagicShop
+
+Method 2
+หรือถ้าจะติดตตั้ง project ไม่ได้ใช้อันนี้แล้ว ไป copy code จาก git นี้ไปลงแก้
 (https://drive.google.com/file/d/1_UQuYUKmzROgCg8N8mHHtSriQVeoX9Eq/view?usp=drive_link)
 
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
