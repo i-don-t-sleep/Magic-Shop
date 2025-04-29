@@ -35,6 +35,20 @@ admin - เห็นข้างบนหมด
 superadmin - เห็นทุกอย่าง
 customer - product(ไม่มีปุ่มadd) carts shipping
 
+## เวลาก่อนทำงานให้ใช้ (ดึงงานล่าสุดมาใช้)
+
+git pull origin main
+
+## เวลาจะพักแล้ว ส่งงานขึ้น main
+[ดูว่ามีใครอัพงานไหม. ถ้าไม่มีก็จัดไป]
+git status
+
+git add . //ที่เราเปลี่ยนอัพลงไป commit อันเดิมไม่เปลี่ยน
+git commit -m "เพิ่มอะไรใหม่"
+git push origin main //อัพลง main branch
+
+-จบ-
+
 ## Getting Started
 
 First, run the development server:
