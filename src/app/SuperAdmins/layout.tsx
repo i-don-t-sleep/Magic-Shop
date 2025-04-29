@@ -58,16 +58,16 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
   const pathname = usePathname()
   const titleMap: Record<string, string> = {
-    "/magic-shop/dashboard": "Dashboard",
-    "/magic-shop/products": "Products",
-    "/magic-shop/reviews": "Reviews",
-    "/magic-shop/orders": "Orders",
-    "/magic-shop/transactions": "Transactions",
-    "/magic-shop/reports": "Reports",
-    "/magic-shop/shipping": "Shipping",
-    "/magic-shop/users": "Users",
-    "/magic-shop/publishers": "Publishers",
-    "/magic-shop/admins": "Admins",
+    "/SuperAdmins/dashboard": "Dashboard",
+    "/SuperAdmins/products": "Products",
+    "/SuperAdmins/reviews": "Reviews",
+    "/SuperAdmins/orders": "Orders",
+    "/SuperAdmins/transactions": "Transactions",
+    "/SuperAdmins/reports": "Reports",
+    "/SuperAdmins/shipping": "Shipping",
+    "/SuperAdmins/users": "Users",
+    "/SuperAdmins/publishers": "Publishers",
+    "/SuperAdmins/admins": "Admins",
   }
   const pageTitle = Object.entries(titleMap).find(([path]) => pathname.startsWith(path))?.[1] || "MagicShop"
 
@@ -121,22 +121,22 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                 <div className="flex-1 overflow-y-auto force-scrollbar-zero w-full">
                   <div className="space-y-1">
                     {!sidebarCollapsed && <p className="text-sm text-zinc-400 px-2 py-2">Administrator</p>}
-                    <NavItem icon={<GridIcon />} label="Dashboard" href="/magic-shop/dashboard" collapsed={sidebarCollapsed} />
-                    <NavItem icon={<ShoppingBagIcon />} label="Orders" href="/magic-shop/orders" collapsed={sidebarCollapsed} />
-                    <NavItem icon={<PackageIcon />} label="Products" href="/magic-shop/products" collapsed={sidebarCollapsed} />
-                    <NavItem icon={<ReceiptIcon />} label="Transactions" href="/magic-shop/transactions" collapsed={sidebarCollapsed} />
-                    <NavItem icon={<BarChartIcon />} label="Reports" href="/magic-shop/reports" collapsed={sidebarCollapsed} />
-                    <NavItem icon={<StarIcon />} label="Reviews" href="/magic-shop/reviews" collapsed={sidebarCollapsed} />
-                    <NavItem icon={<TruckIcon />} label="Shipping" href="/magic-shop/shipping" collapsed={sidebarCollapsed} />
+                    <NavItem icon={<GridIcon />} label="Dashboard" href="/SuperAdmins/dashboard" collapsed={sidebarCollapsed} />
+                    <NavItem icon={<ShoppingBagIcon />} label="Orders" href="/SuperAdmins/orders" collapsed={sidebarCollapsed} />
+                    <NavItem icon={<PackageIcon />} label="Products" href="/SuperAdmins/products" collapsed={sidebarCollapsed} />
+                    <NavItem icon={<ReceiptIcon />} label="Transactions" href="/SuperAdmins/transactions" collapsed={sidebarCollapsed} />
+                    <NavItem icon={<BarChartIcon />} label="Reports" href="/SuperAdmins/reports" collapsed={sidebarCollapsed} />
+                    <NavItem icon={<StarIcon />} label="Reviews" href="/SuperAdmins/reviews" collapsed={sidebarCollapsed} />
+                    <NavItem icon={<TruckIcon />} label="Shipping" href="/SuperAdmins/shipping" collapsed={sidebarCollapsed} />
                   </div>
 
                   <hr className="h-px my-2 bg-transparent border-0" />
 
                   <div className="space-y-1">
                     {!sidebarCollapsed && <p className="text-sm text-zinc-400 px-2 py-2">Super Admin</p>}
-                    <NavItem icon={<UserIcon />} label="Users" href="/magic-shop/users" collapsed={sidebarCollapsed} />
-                    <NavItem icon={<TagIcon />} label="Publishers" href="/magic-shop/publishers" collapsed={sidebarCollapsed} />
-                    <NavItem icon={<ShieldIcon />} label="Admins" href="/magic-shop/admins" collapsed={sidebarCollapsed} />
+                    <NavItem icon={<UserIcon />} label="Users" href="/SuperAdmins/users" collapsed={sidebarCollapsed} />
+                    <NavItem icon={<TagIcon />} label="Publishers" href="/SuperAdmins/publishers" collapsed={sidebarCollapsed} />
+                    <NavItem icon={<ShieldIcon />} label="Admins" href="/SuperAdmins/admins" collapsed={sidebarCollapsed} />
                   </div>
                 </div>
 

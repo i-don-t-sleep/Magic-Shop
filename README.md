@@ -28,6 +28,13 @@ Method 2
 
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Role users
+
+publisher - ใช้ reports reviews stock(ไม่มีเลขตำแหน่ง stock) poduct
+admin - เห็นข้างบนหมด 
+superadmin - เห็นทุกอย่าง
+customer - product(ไม่มีปุ่มadd) carts shipping
+
 ## Getting Started
 
 First, run the development server:

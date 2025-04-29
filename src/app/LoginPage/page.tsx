@@ -29,7 +29,7 @@ export default function LoginPage() {
     const data = await res.json()
   
     if (data.success) {
-      router.push('/magic-shop/dashboard')
+      router.push('/SuperAdmins/dashboard')
       showSuccessToast('Login Complete!')
     } else {
       showErrorToast(data.message)

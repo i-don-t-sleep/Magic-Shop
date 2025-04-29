@@ -16,6 +16,6 @@ const titleMap: Record<string, string> = {
 }
 
 export default function mainPage() {
-  redirect("/magic-shop/dashboard")
+  redirect("/SuperAdmins/dashboard")
   return <p>just test</p>
 }

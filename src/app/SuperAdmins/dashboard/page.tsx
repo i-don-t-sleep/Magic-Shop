@@ -14,7 +14,7 @@ export default function DashboardPage() {
           <div className="p-[1px] bg-gradient-to-t from-magic-iron-1 from-20% to-magic-iron-2 to-80% rounded-[18px] overflow-hidden h-full">
             <div className="relative h-full">
               <div className="absolute inset-0">
-                <CustomWorldMap zoom={mapZoom} setZoom={setMapZoom} />
+                <WorldMapWithSales zoom={mapZoom} setZoom={setMapZoom} />
               </div>
               <div className="absolute bottom-4 right-4 flex flex-col gap-2">
                 <Button variant="outline" size="icon" className="bg-zinc-800/80 border-zinc-700 text-white">
@@ -105,6 +105,8 @@ export default function DashboardPage() {
   )
 }
 
+// ===== COMPONENT: Stats Card =====
+// Displays a key metric with title, value and subtitle
 function StatsCard({ title, value, subtitle }: { title: string; value: string; subtitle: string }) {
   return (
     <div className="p-[1px] bg-gradient-to-t from-magic-border-1 to-magic-border-2 rounded-[19px] h-full">
@@ -119,24 +121,27 @@ function StatsCard({ title, value, subtitle }: { title: string; value: string; s
   )
 }
 
-function CustomWorldMap({ zoom, setZoom }) {
-  const svgRef = useRef(null)
+// ===== COMPONENT: World Map With Sales Data =====
+// Interactive world map showing sales data by region
+function WorldMapWithSales({ zoom, setZoom }) {
+  // State for map interaction
+  const mapContainerRef = useRef(null)
   const [isDragging, setIsDragging] = useState(false)
   const [position, setPosition] = useState({ x: 0, y: 0 })
   const [startPosition, setStartPosition] = useState({ x: 0, y: 0 })
   const [tooltip, setTooltip] = useState({ show: false, content: "", x: 0, y: 0 })
 
-  // Sample sales data for different regions
-  const regionData = [
-    { id: "north-america", name: "North America", intensity: 0.9, cx: 200, cy: 180 },
-    { id: "south-america", name: "South America", intensity: 0.7, cx: 300, cy: 350 },
-    { id: "europe", name: "Europe", intensity: 0.8, cx: 480, cy: 170 },
-    { id: "africa", name: "Africa", intensity: 0.5, cx: 480, cy: 300 },
-    { id: "asia", name: "Asia", intensity: 0.85, cx: 650, cy: 200 },
-    { id: "oceania", name: "Oceania", intensity: 0.6, cx: 750, cy: 380 },
-  ]
+  // Sample sales data by region (country code: intensity value 0-1)
+  const salesData = {
+    NA: 0.9, // North America
+    SA: 0.7, // South America
+    EU: 0.8, // Europe
+    AF: 0.5, // Africa
+    AS: 0.85, // Asia
+    OC: 0.6, // Oceania
+  }
 
-  // Function to get color based on intensity
+  // Function to get color based on intensity (0-1)
   const getColor = (intensity) => {
     // Create a color scale from dark red to bright red
     const minColor = [74, 26, 26] // #4a1a1a
@@ -184,148 +189,151 @@ function CustomWorldMap({ zoom, setZoom }) {
   }, [isDragging, startPosition])
 
   return (
-    <div className="w-full h-full bg-zinc-900 flex items-center justify-center relative overflow-hidden">
-      <svg
-        ref={svgRef}
-        width="100%"
-        height="100%"
-        viewBox="0 0 960 540"
+    <div
+      ref={mapContainerRef}
+      className="w-full h-full bg-[#161616] flex items-center justify-center relative overflow-hidden"
+    >
+      {/* Map SVG with pan and zoom */}
+      <div
+        className="absolute inset-0 overflow-hidden"
         style={{
           cursor: isDragging ? "grabbing" : "grab",
-          transform: `translate(${position.x}px, ${position.y}px) scale(${zoom})`,
-          transformOrigin: "center",
-          transition: isDragging ? "none" : "transform 0.3s ease",
         }}
-        onMouseDown={handleMouseDown}
       >
-        {/* Grid lines */}
-        <g stroke="#333" strokeWidth="0.5">
-          {Array.from({ length: 18 }, (_, i) => (
-            <line key={`lat-${i}`} x1="0" y1={i * 30} x2="960" y2={i * 30} />
-          ))}
-          {Array.from({ length: 32 }, (_, i) => (
-            <line key={`lon-${i}`} x1={i * 30} y1="0" x2={i * 30} y2="540" />
-          ))}
-        </g>
+        <svg
+          width="100%"
+          height="100%"
+          viewBox="0 0 1000 500"
+          style={{
+            transform: `translate(${position.x}px, ${position.y}px) scale(${zoom})`,
+            transformOrigin: "center",
+            transition: isDragging ? "none" : "transform 0.3s ease",
+          }}
+          onMouseDown={handleMouseDown}
+        >
+          {/* Background grid */}
+          <g stroke="#333" strokeWidth="0.5">
+            {Array.from({ length: 18 }, (_, i) => (
+              <line key={`lat-${i}`} x1="0" y1={i * 30} x2="1000" y2={i * 30} />
+            ))}
+            {Array.from({ length: 34 }, (_, i) => (
+              <line key={`lon-${i}`} x1={i * 30} y1="0" x2={i * 30} y2="540" />
+            ))}
+          </g>
+          {/* World Map - Simplified continent shapes */}
+          {/* North America */}
+          <path
+            d="M170,50 L135,125 L175,220 L270,170 L310,60 Z"
+            fill={getColor(salesData.NA)}
+            stroke="#333"
+            strokeWidth="1"
+            onMouseEnter={(e) => {
+              setTooltip({
+                show: true,
+                content: `North America: ${Math.round(salesData.NA * 100)}% market share`,
+                x: e.clientX,
+                y: e.clientY,
+              })
+            }}
+            onMouseLeave={() => setTooltip({ ...tooltip, show: false })}
+          />
+          {/* South America */}
+          <path
+            d="M235,230 L210,350 L270,430 L330,350 L290,230 Z"
+            fill={getColor(salesData.SA)}
+            stroke="#333"
+            strokeWidth="1"
+            onMouseEnter={(e) => {
+              setTooltip({
+                show: true,
+                content: `South America: ${Math.round(salesData.SA * 100)}% market share`,
+                x: e.clientX,
+                y: e.clientY,
+              })
+            }}
+            onMouseLeave={() => setTooltip({ ...tooltip, show: false })}
+          />
+          {/* Europe */}
+          <path
+            d="M420,60 L400,130 L480,150 L520,90 L490,60 Z"
+            fill={getColor(salesData.EU)}
+            stroke="#333"
+            strokeWidth="1"
+            onMouseEnter={(e) => {
+              setTooltip({
+                show: true,
+                content: `Europe: ${Math.round(salesData.EU * 100)}% market share`,
+                x: e.clientX,
+                y: e.clientY,
+              })
+            }}
+            onMouseLeave={() => setTooltip({ ...tooltip, show: false })}
+          />
+          {/* Africa */}
+          <path
+            d="M450,150 L420,280 L490,350 L550,280 L520,150 Z"
+            fill={getColor(salesData.AF)}
+            stroke="#333"
+            strokeWidth="1"
+            onMouseEnter={(e) => {
+              setTooltip({
+                show: true,
+                content: `Africa: ${Math.round(salesData.AF * 100)}% market share`,
+                x: e.clientX,
+                y: e.clientY,
+              })
+            }}
+            onMouseLeave={() => setTooltip({ ...tooltip, show: false })}
+          />
+          {/* Asia */}
+          <path
+            d="M550,60 L520,150 L650,200 L800,150 L750,60 Z"
+            fill={getColor(salesData.AS)}
+            stroke="#333"
+            strokeWidth="1"
+            onMouseEnter={(e) => {
+              setTooltip({
+                show: true,
+                content: `Asia: ${Math.round(salesData.AS * 100)}% market share`,
+                x: e.clientX,
+                y: e.clientY,
+              })
+            }}
+            onMouseLeave={() => setTooltip({ ...tooltip, show: false })}
+          />
+          {/* Australia/Oceania */}
+          <path
+            d="M750,250 L720,320 L800,350 L850,300 L820,250 Z"
+            fill={getColor(salesData.OC)}
+            stroke="#333"
+            strokeWidth="1"
+            onMouseEnter={(e) => {
+              setTooltip({
+                show: true,
+                content: `Oceania: ${Math.round(salesData.OC * 100)}% market share`,
+                x: e.clientX,
+                y: e.clientY,
+              })
+            }}
+            onMouseLeave={() => setTooltip({ ...tooltip, show: false })}
+          />
+          {/* Major cities/markets as hotspots */}
+          <circle cx="200" cy="120" r="8" fill="#e8443c80" stroke="#e8443c" strokeWidth="1" /> {/* New York */}
+          <circle cx="150" cy="150" r="6" fill="#e8443c80" stroke="#e8443c" strokeWidth="1" /> {/* Chicago */}
+          <circle cx="100" cy="130" r="7" fill="#e8443c80" stroke="#e8443c" strokeWidth="1" /> {/* Los Angeles */}
+          <circle cx="450" cy="100" r="8" fill="#e8443c80" stroke="#e8443c" strokeWidth="1" /> {/* London */}
+          <circle cx="480" cy="110" r="6" fill="#e8443c80" stroke="#e8443c" strokeWidth="1" /> {/* Paris */}
+          <circle cx="510" cy="120" r="5" fill="#e8443c80" stroke="#e8443c" strokeWidth="1" /> {/* Berlin */}
+          <circle cx="600" cy="150" r="8" fill="#e8443c80" stroke="#e8443c" strokeWidth="1" /> {/* Tokyo */}
+          <circle cx="580" cy="180" r="7" fill="#e8443c80" stroke="#e8443c" strokeWidth="1" /> {/* Beijing */}
+          <circle cx="550" cy="200" r="6" fill="#e8443c80" stroke="#e8443c" strokeWidth="1" /> {/* Delhi */}
+          <circle cx="220" cy="300" r="5" fill="#e8443c80" stroke="#e8443c" strokeWidth="1" /> {/* São Paulo */}
+          <circle cx="450" cy="250" r="5" fill="#e8443c80" stroke="#e8443c" strokeWidth="1" /> {/* Cairo */}
+          <circle cx="750" cy="320" r="6" fill="#e8443c80" stroke="#e8443c" strokeWidth="1" /> {/* Sydney */}
+        </svg>
+      </div>
 
-        {/* World regions */}
-        <g>
-          {/* Simplified continent shapes */}
-          <path
-            d="M150,120 C180,100 220,110 250,130 C280,150 300,180 320,160 C340,140 360,130 380,150 C400,170 420,150 440,130 L440,250 L150,250 Z"
-            fill={getColor(0.9)}
-            stroke="#333"
-            strokeWidth="1"
-            onMouseEnter={(e) => {
-              setTooltip({
-                show: true,
-                content: "North America: 90% market share",
-                x: e.clientX,
-                y: e.clientY,
-              })
-            }}
-            onMouseLeave={() => setTooltip({ ...tooltip, show: false })}
-          />
-          <path
-            d="M250,260 C270,280 290,300 270,330 C250,360 230,380 250,400 C270,420 290,410 310,430 L310,480 L200,480 L200,260 Z"
-            fill={getColor(0.7)}
-            stroke="#333"
-            strokeWidth="1"
-            onMouseEnter={(e) => {
-              setTooltip({
-                show: true,
-                content: "South America: 70% market share",
-                x: e.clientX,
-                y: e.clientY,
-              })
-            }}
-            onMouseLeave={() => setTooltip({ ...tooltip, show: false })}
-          />
-          <path
-            d="M450,120 C470,100 490,110 510,130 C530,150 550,140 570,120 L570,220 L450,220 Z"
-            fill={getColor(0.8)}
-            stroke="#333"
-            strokeWidth="1"
-            onMouseEnter={(e) => {
-              setTooltip({
-                show: true,
-                content: "Europe: 80% market share",
-                x: e.clientX,
-                y: e.clientY,
-              })
-            }}
-            onMouseLeave={() => setTooltip({ ...tooltip, show: false })}
-          />
-          <path
-            d="M450,230 C470,250 490,270 510,290 C530,310 550,330 570,350 C590,370 610,390 630,410 L450,410 Z"
-            fill={getColor(0.5)}
-            stroke="#333"
-            strokeWidth="1"
-            onMouseEnter={(e) => {
-              setTooltip({
-                show: true,
-                content: "Africa: 50% market share",
-                x: e.clientX,
-                y: e.clientY,
-              })
-            }}
-            onMouseLeave={() => setTooltip({ ...tooltip, show: false })}
-          />
-          <path
-            d="M580,120 C600,100 620,110 640,130 C660,150 680,170 700,150 C720,130 740,110 760,130 C780,150 800,170 820,150 L820,300 L580,300 Z"
-            fill={getColor(0.85)}
-            stroke="#333"
-            strokeWidth="1"
-            onMouseEnter={(e) => {
-              setTooltip({
-                show: true,
-                content: "Asia: 85% market share",
-                x: e.clientX,
-                y: e.clientY,
-              })
-            }}
-            onMouseLeave={() => setTooltip({ ...tooltip, show: false })}
-          />
-          <path
-            d="M700,320 C720,340 740,360 760,340 C780,320 800,340 820,360 C840,380 860,400 880,380 L880,450 L700,450 Z"
-            fill={getColor(0.6)}
-            stroke="#333"
-            strokeWidth="1"
-            onMouseEnter={(e) => {
-              setTooltip({
-                show: true,
-                content: "Oceania: 60% market share",
-                x: e.clientX,
-                y: e.clientY,
-              })
-            }}
-            onMouseLeave={() => setTooltip({ ...tooltip, show: false })}
-          />
-        </g>
-
-        {/* Hot spots for major markets */}
-        {regionData.map((region) => (
-          <circle
-            key={region.id}
-            cx={region.cx}
-            cy={region.cy}
-            r={15 * region.intensity}
-            fill={`${getColor(region.intensity)}80`} // Add transparency
-            stroke={getColor(region.intensity)}
-            strokeWidth="1"
-            onMouseEnter={(e) => {
-              setTooltip({
-                show: true,
-                content: `${region.name}: ${Math.round(region.intensity * 100)}% market share`,
-                x: e.clientX,
-                y: e.clientY,
-              })
-            }}
-            onMouseLeave={() => setTooltip({ ...tooltip, show: false })}
-          />
-        ))}
-      </svg>
-
+      {/* Map legend */}
       <div className="absolute bottom-4 left-4 bg-zinc-800/80 rounded px-3 py-2">
         <div className="text-xs text-zinc-400 mb-1">Market Share</div>
         <div className="flex items-center gap-1">
@@ -337,6 +345,7 @@ function CustomWorldMap({ zoom, setZoom }) {
         </div>
       </div>
 
+      {/* Tooltip */}
       {tooltip.show && (
         <div
           className="absolute bg-zinc-800 text-white px-2 py-1 rounded text-xs pointer-events-none z-10"
@@ -353,10 +362,12 @@ function CustomWorldMap({ zoom, setZoom }) {
   )
 }
 
+// ===== COMPONENT: Income Chart =====
+// Line chart showing income over time
 function IncomeChart() {
-  // This would be replaced with a real chart library like recharts
   return (
     <div className="h-48 relative">
+      {/* Y-axis labels */}
       <div className="absolute left-0 top-0 h-full flex flex-col justify-between text-xs text-zinc-500">
         <div>40k</div>
         <div>30k</div>
@@ -364,6 +375,8 @@ function IncomeChart() {
         <div>10k</div>
         <div>0</div>
       </div>
+
+      {/* X-axis labels */}
       <div className="absolute bottom-0 left-10 right-0 flex justify-between text-xs text-zinc-500">
         <div>Jan</div>
         <div>Feb</div>
@@ -378,6 +391,8 @@ function IncomeChart() {
         <div>Nov</div>
         <div>Dec</div>
       </div>
+
+      {/* Chart SVG */}
       <div className="absolute left-10 top-0 right-0 bottom-5">
         <svg className="w-full h-full" viewBox="0 0 800 200" preserveAspectRatio="none">
           <defs>
@@ -386,10 +401,12 @@ function IncomeChart() {
               <stop offset="100%" stopColor="#e8443c" stopOpacity="0" />
             </linearGradient>
           </defs>
+          {/* Area fill under the line */}
           <path
             d="M0,150 C50,140 100,160 150,140 C200,120 250,130 300,100 C350,70 400,90 450,80 C500,70 550,90 600,80 C650,70 700,90 750,70 L800,60 L800,200 L0,200 Z"
             fill="url(#incomeGradient)"
           />
+          {/* Line chart */}
           <path
             d="M0,150 C50,140 100,160 150,140 C200,120 250,130 300,100 C350,70 400,90 450,80 C500,70 550,90 600,80 C650,70 700,90 750,70 L800,60"
             fill="none"
@@ -402,6 +419,8 @@ function IncomeChart() {
   )
 }
 
+// ===== COMPONENT: Product Status List =====
+// Shows availability status for products
 function ProductStatusList() {
   const products = [
     { name: "2024 Dungeon Master's guide", status: "Available" },
@@ -429,10 +448,15 @@ function ProductStatusList() {
   )
 }
 
+// ===== COMPONENT: Miniatures Pie Chart =====
+// Circular chart showing product category breakdown
 function MiniaturesPieChart() {
   return (
     <svg className="w-full h-full" viewBox="0 0 100 100">
+      {/* Background circle */}
       <circle cx="50" cy="50" r="45" fill="transparent" stroke="#4a1a1a" strokeWidth="10" />
+
+      {/* Progress arc (55%) */}
       <circle
         cx="50"
         cy="50"
