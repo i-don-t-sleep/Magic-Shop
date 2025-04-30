@@ -5,6 +5,7 @@ const buttonVariants = {
   variant: {
     default: "bg-gray-500 text-white hover:bg-magic-red focus-visible:outline-red-600 rounded-xl duration-100",
     outline: "text-white bg-gradient-to-b from-[#2a2a2a] to-[#1a1a1a] hover:from-[#d10000] hover:to-red-500 hover:bg-gradient-to-b transition-all duration-100 rounded-xl",
+    outlineWithOut: "text-white bg-gradient-to-b from-[#2a2a2a] to-[#1a1a1a] hover:from-[#d10000] hover:to-red-500 hover:bg-gradient-to-b transition-all duration-100 rounded-xl",
     moreVert: "text-white bg-magic-iron-1 hover:bg-gray-800 transition-all duration-10 rounded-sm",
     ghost: "hover:text-white",
     ClickButton: "text-white bg-[#373737] hover:bg-red-600 transition-all duration-10 rounded-sm",

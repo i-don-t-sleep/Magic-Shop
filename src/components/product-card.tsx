@@ -30,7 +30,7 @@ export function ProductCard({ title, price, inventory, imageUrl, href }: Product
               <MoreVertical className="text-white h-5 w-5" />
             </Button>
           </div>
-          <Link href={href} className="block px-4 pb-4">
+          <Link href={`/SuperAdmins/products/${href}`} className="block px-4 pb-4">
           <div className="aspect-square relative rounded-lg overflow-hidden mb-3">
             <Image
                 src={`/api/image?path=products/${imageUrl}`}

@@ -2,6 +2,8 @@ import path from "path"
 import fs from "fs"
 import { NextRequest } from "next/server"
 
+//prisma is safe
+// ใช้ BLOB ซะะะะะะะะ
 export async function GET(req: NextRequest) {
   const imgPath = req.nextUrl.searchParams.get("path")
   if (!imgPath) return new Response("Not found", { status: 404 })

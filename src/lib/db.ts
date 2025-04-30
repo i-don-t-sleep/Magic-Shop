@@ -1,5 +1,5 @@
 import mysql, { Connection } from 'mysql2/promise' //npm install mysql2
-
+//prisma
 let connection: Connection | null = null
 
 export async function connectDB(): Promise<Connection> {
