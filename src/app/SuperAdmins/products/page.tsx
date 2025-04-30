@@ -1,6 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import type React from "react"
+
+import { useState, useRef } from "react"
 import { ChevronDown, ChevronLeft, ChevronRight, Filter, Plus, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -267,76 +269,19 @@ const mockProducts = [
     inventory: 23,
     imageUrl: "f9657989f2f325adb5a1a578f97643ab.png",
     href: "/magic-shop/products/beholder",
-  },{
-    title: "D&D Icons of the Realms: Gargantuan Tiamat",
-    price: "$399.99",
-    inventory: 12,
-    imageUrl: "cf27466446e6da568b1eae990514f787.png",
-    href: "/magic-shop/products/tiamat",
-  },
-  {
-    title: "D&D Icons of the Realms: Adult Red Dragon",
-    price: "$89.99",
-    inventory: 0,
-    imageUrl: "2c4c88e9ecc12670d82aece0ec209b09.png",
-    href: "/magic-shop/products/red-dragon",
-  },
-  {
-    title: "D&D Icons of the Realms: Beholder",
-    price: "$69.99",
-    inventory: 23,
-    imageUrl: "f9657989f2f325adb5a1a578f97643ab.png",
-    href: "/magic-shop/products/beholder",
-  },{
-    title: "D&D Icons of the Realms: Gargantuan Tiamat",
-    price: "$399.99",
-    inventory: 12,
-    imageUrl: "cf27466446e6da568b1eae990514f787.png",
-    href: "/magic-shop/products/tiamat",
-  },
-  {
-    title: "D&D Icons of the Realms: Adult Red Dragon",
-    price: "$89.99",
-    inventory: 0,
-    imageUrl: "2c4c88e9ecc12670d82aece0ec209b09.png",
-    href: "/magic-shop/products/red-dragon",
-  },
-  {
-    title: "D&D Icons of the Realms: Beholder",
-    price: "$69.99",
-    inventory: 23,
-    imageUrl: "f9657989f2f325adb5a1a578f97643ab.png",
-    href: "/magic-shop/products/beholder",
-  },{
-    title: "D&D Icons of the Realms: Gargantuan Tiamat",
-    price: "$399.99",
-    inventory: 12,
-    imageUrl: "cf27466446e6da568b1eae990514f787.png",
-    href: "/magic-shop/products/tiamat",
-  },
-  {
-    title: "D&D Icons of the Realms: Adult Red Dragon",
-    price: "$89.99",
-    inventory: 0,
-    imageUrl: "2c4c88e9ecc12670d82aece0ec209b09.png",
-    href: "/magic-shop/products/red-dragon",
-  },
-  {
-    title: "D&D Icons of the Realms: Beholder",
-    price: "$69.99",
-    inventory: 23,
-    imageUrl: "f9657989f2f325adb5a1a578f97643ab.png",
-    href: "/magic-shop/products/beholder",
   },
 ]
 
 export default function ProductsPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [currentPage, setCurrentPage] = useState(1)
-  const productsPerPage = 20  //can selected by user needed (minimum)
-  const productPerRows = 15 //*
+  const [productsPerPage, setProductsPerPage] = useState(18)
+  const [cardsPerRow, setCardsPerRow] = useState(4)
+  const [itemsPerPageInput, setItemsPerPageInput] = useState("18")
+  const [showItemsPerPageInput, setShowItemsPerPageInput] = useState(false)
 
-  //mockProducts in backend should be here. when use API
+  // Reference to the bottom of the page for scrolling
+  const bottomRef = useRef<HTMLDivElement>(null)
 
   // Filter products based on search query
   const filteredProducts = mockProducts.filter((product) =>
@@ -351,8 +296,33 @@ export default function ProductsPage() {
   const indexOfFirstProduct = indexOfLastProduct - productsPerPage
   const currentProducts = filteredProducts.slice(indexOfFirstProduct, indexOfLastProduct)
 
-  // Change page
-  const paginate = (pageNumber: number) => setCurrentPage(pageNumber)
+  // Change page and scroll to bottom
+  const paginate = (pageNumber: number) => {
+    setCurrentPage(pageNumber)
+
+    // Scroll to bottom after a short delay to ensure the page has updated
+    setTimeout(() => {
+      bottomRef.current?.scrollIntoView({ behavior: "smooth" })
+    }, 100)
+  }
+
+  // Handle items per page change
+  const handleItemsPerPageChange = () => {
+    const newValue = Number.parseInt(itemsPerPageInput)
+    if (!isNaN(newValue) && newValue > 0) {
+      setProductsPerPage(newValue)
+      // Reset to page 1 when changing items per page
+      setCurrentPage(1)
+    }
+    setShowItemsPerPageInput(false)
+  }
+
+  // Handle input keydown for items per page
+  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      handleItemsPerPageChange()
+    }
+  }
 
   // Generate page numbers
   const pageNumbers = []
@@ -362,7 +332,7 @@ export default function ProductsPage() {
 
   return (
     <div className="pt-3 flex flex-col h-full overflow-hidden">
-      {/* ==================== Header with search and filters ==================== */}
+      {/* Header with search and filters */}
       <div className="px-6 pb-3 flex justify-between items-center">
         <div className="w-full max-w-md">
           <div className="relative">
@@ -392,17 +362,14 @@ export default function ProductsPage() {
         </div>
       </div>
 
-      {/* ==================== Body ====================*/}
-      {/* Products grid - with padding at the bottom to account for fixed pagination */}
+      {/* Products grid */}
       <div className="flex-1 px-6 overflow-y-auto">
         {currentProducts.length > 0 ? (
-          <>
-            <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-${productPerRows} gap-6 mb-2`}>
-              {currentProducts.map((product, index) => (
-                <ProductCard key={index} {...product} />
-              ))}
-            </div>
-          </>
+          <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-${cardsPerRow} gap-6`}>
+            {currentProducts.map((product, index) => (
+              <ProductCard key={index} {...product} />
+            ))}
+          </div>
         ) : (
           <div className="flex flex-col items-center justify-center h-full py-16">
             <div className="text-2xl font-bold text-zinc-500 mb-4">No products found</div>
@@ -422,112 +389,168 @@ export default function ProductsPage() {
           </div>
         )}
 
-        {/* ==================== Footer ====================*/}
-        {/* Footer */}
-        {/* Centered pagination */}
-        <div className="p-4 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="icon"
-              className="h-10 w-10 rounded-full border-zinc-700"
-              onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-              disabled={currentPage === 1}
-            >
+        {/* Reference div for scrolling to bottom */}
+        <div ref={bottomRef} className="h-4"></div>
+      </div>
+
+      {/* Pagination at the bottom */}
+      <div className="sticky bottom-0 bg-magic-back px-6 py-4 border-t border-zinc-800 flex justify-between items-center mt-6">
+        {/* Left side - pagination controls */}
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-10 w-10 rounded-full border-zinc-700"
+            onClick={() => paginate(Math.max(1, currentPage - 1))}
+            disabled={currentPage === 1}
+          >
             <ChevronLeft className="h-4 w-4" />
-            </Button>
+          </Button>
 
-            {totalPages <= 5 ? (
-              // If we have 5 or fewer pages, show all page numbers
-              pageNumbers.map((number) => (
-                <Button
-                  key={number}
-                  variant={currentPage === number ? "default" : "outline"}
-                  className={`h-10 w-10 rounded-full p-0 ${
-                    currentPage === number ? "bg-red-600 hover:bg-red-700 border-red-600" : "border-zinc-700"
-                  }`}
-                  onClick={() => paginate(number)}
-                >
-                  {number}
-                </Button>
-              ))
-            ) : (
-              // If we have more than 5 pages, show a subset with ellipsis
-              <>
-                {/* First page */}
-                <Button
-                  variant={currentPage === 1 ? "default" : "outline"}
-                  className={`h-10 w-10 rounded-full p-0 ${
-                    currentPage === 1 ? "bg-red-600 hover:bg-red-700 border-red-600" : "border-zinc-700"
-                  }`}
-                  onClick={() => paginate(1)}
-                >
-                  1
-                </Button>
-
-                {/* Show ellipsis if current page is far from the start */}
-                {currentPage > 3 && <span className="px-2 text-zinc-500">...</span>}
-
-                {/* Pages around current page */}
-                {pageNumbers
-                  .filter(
-                    (number) =>
-                      number !== 1 &&
-                      number !== totalPages &&
-                      ((currentPage <= 3 && number <= 4) ||
-                        (currentPage > totalPages - 3 && number > totalPages - 4) ||
-                        (number >= currentPage - 1 && number <= currentPage + 1)),
-                  )
-                  .map((number) => (
-                    <Button
-                      key={number}
-                      variant={currentPage === number ? "default" : "outline"}
-                      className={`h-10 w-10 rounded-full p-0 ${
-                        currentPage === number ? "bg-red-600 hover:bg-red-700 border-red-600" : "border-zinc-700"
-                      }`}
-                      onClick={() => paginate(number)}
-                    >
-                      {number}
-                    </Button>
-                  ))}
-
-                {/* Show ellipsis if current page is far from the end */}
-                {currentPage < totalPages - 2 && <span className="px-2 text-zinc-500">...</span>}
-
-                {/* Last page */}
-                {totalPages > 1 && (
-                  <Button
-                    variant={currentPage === totalPages ? "default" : "outline"}
-                    className={`h-10 w-10 rounded-full p-0 ${
-                      currentPage === totalPages ? "bg-red-600 hover:bg-red-700 border-red-600" : "border-zinc-700"
-                    }`}
-                    onClick={() => paginate(totalPages)}
-                  >
-                    {totalPages}
-                  </Button>
-                )}
-              </>
-            )}
-
-            <Button
-              variant="outline"
-              size="icon"
-              className="h-10 w-10 rounded-full border-zinc-700"
-              onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-              disabled={currentPage === totalPages}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-          
-          {/*
-          <div className="flex items-center gap-2">
-              <span className="text-zinc-400">Show:</span>
-              <Button variant="outline" className="border-zinc-700 text-white h-8">
-                {cardPerPage} rows
-                <ChevronDown className="ml-2 h-4 w-4" />
+          {totalPages <= 5 ? (
+            // If we have 5 or fewer pages, show all page numbers
+            pageNumbers.map((number) => (
+              <Button
+                key={number}
+                variant={currentPage === number ? "default" : "outline"}
+                className={`h-10 w-10 rounded-full p-0 ${
+                  currentPage === number ? "bg-red-600 hover:bg-red-700 border-red-600" : "border-zinc-700"
+                }`}
+                onClick={() => paginate(number)}
+              >
+                {number}
               </Button>
-          </div>*/}
+            ))
+          ) : (
+            // If we have more than 5 pages, show a subset with ellipsis
+            <>
+              {/* First page */}
+              <Button
+                variant={currentPage === 1 ? "default" : "outline"}
+                className={`h-10 w-10 rounded-full p-0 ${
+                  currentPage === 1 ? "bg-red-600 hover:bg-red-700 border-red-600" : "border-zinc-700"
+                }`}
+                onClick={() => paginate(1)}
+              >
+                1
+              </Button>
+
+              {/* Show ellipsis if current page is far from the start */}
+              {currentPage > 3 && <span className="px-2 text-zinc-500">...</span>}
+
+              {/* Pages around current page */}
+              {pageNumbers
+                .filter(
+                  (number) =>
+                    number !== 1 &&
+                    number !== totalPages &&
+                    ((currentPage <= 3 && number <= 4) ||
+                      (currentPage > totalPages - 3 && number > totalPages - 4) ||
+                      (number >= currentPage - 1 && number <= currentPage + 1)),
+                )
+                .map((number) => (
+                  <Button
+                    key={number}
+                    variant={currentPage === number ? "default" : "outline"}
+                    className={`h-10 w-10 rounded-full p-0 ${
+                      currentPage === number ? "bg-red-600 hover:bg-red-700 border-red-600" : "border-zinc-700"
+                    }`}
+                    onClick={() => paginate(number)}
+                  >
+                    {number}
+                  </Button>
+                ))}
+
+              {/* Show ellipsis if current page is far from the end */}
+              {currentPage < totalPages - 2 && <span className="px-2 text-zinc-500">...</span>}
+
+              {/* Last page */}
+              {totalPages > 1 && (
+                <Button
+                  variant={currentPage === totalPages ? "default" : "outline"}
+                  className={`h-10 w-10 rounded-full p-0 ${
+                    currentPage === totalPages ? "bg-red-600 hover:bg-red-700 border-red-600" : "border-zinc-700"
+                  }`}
+                  onClick={() => paginate(totalPages)}
+                >
+                  {totalPages}
+                </Button>
+              )}
+            </>
+          )}
+
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-10 w-10 rounded-full border-zinc-700"
+            onClick={() => paginate(Math.min(totalPages, currentPage + 1))}
+            disabled={currentPage === totalPages}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+
+        {/* Right side - cards per row and items per page controls */}
+        <div className="flex items-center gap-4">
+          {/* Cards per row controls */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-zinc-400">Cards per row:</span>
+            <div className="flex">
+              <Button
+                variant={cardsPerRow === 3 ? "default" : "outline"}
+                size="icon"
+                className={`h-8 w-8 rounded-l-md rounded-r-none ${
+                  cardsPerRow === 3 ? "bg-red-600 hover:bg-red-700 border-red-600" : "border-zinc-700"
+                }`}
+                onClick={() => setCardsPerRow(3)}
+              >
+                <span className="text-xs">3</span>
+              </Button>
+              <Button
+                variant={cardsPerRow === 4 ? "default" : "outline"}
+                size="icon"
+                className={`h-8 w-8 rounded-l-none rounded-r-md ${
+                  cardsPerRow === 4 ? "bg-red-600 hover:bg-red-700 border-red-600" : "border-zinc-700"
+                }`}
+                onClick={() => setCardsPerRow(4)}
+              >
+                <span className="text-xs">4</span>
+              </Button>
+            </div>
+          </div>
+
+          {/* Items per page controls */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-zinc-400">Items per page:</span>
+            {showItemsPerPageInput ? (
+              <div className="flex">
+                <Input
+                  type="number"
+                  value={itemsPerPageInput}
+                  onChange={(e) => setItemsPerPageInput(e.target.value)}
+                  onKeyDown={handleInputKeyDown}
+                  className="w-16 h-8 bg-zinc-900 border-zinc-700 text-white text-center rounded-l-md rounded-r-none"
+                  autoFocus
+                />
+                <Button
+                  variant="outline"
+                  className="h-8 px-2 rounded-l-none rounded-r-md border-zinc-700"
+                  onClick={handleItemsPerPageChange}
+                >
+                  OK
+                </Button>
+              </div>
+            ) : (
+              <Button
+                variant="outline"
+                className="h-8 border-zinc-700 text-white"
+                onClick={() => setShowItemsPerPageInput(true)}
+              >
+                {productsPerPage}
+                <ChevronDown className="ml-1 h-3 w-3" />
+              </Button>
+            )}
+          </div>
         </div>
       </div>
     </div>
