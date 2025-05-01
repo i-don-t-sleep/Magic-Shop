@@ -32,7 +32,7 @@ CREATE TABLE `productimages` (
   `productID` integer,
   `name` varchar(255) UNIQUE NOT NULL,
   `description` text,
-  `img` blob NOT NULL
+  `img` MEDIUMBLOB NOT NULL
 );
 
 CREATE TABLE `orderitems` (
@@ -66,8 +66,8 @@ CREATE TABLE `users` (
   `password` varchar(255) NOT NULL,
   `contactID` integer,
   `accountStatus` enum('Active','Suspended','Deactivated') NOT NULL,
-  `profilePicture` blob,
-  `role` enum('Customer','Data Entry Admin','Super Admin'),
+  `profilePicture` MEDIUMBLOB,
+  `role` enum('Customer','Data Entry Admin','Super Admin') NOT NULL,
   `joinDate` timestamp DEFAULT CURRENT_TIMESTAMP,
   `modifyDate` timestamp DEFAULT CURRENT_TIMESTAMP,
   `lastLogin` timestamp DEFAULT CURRENT_TIMESTAMP
@@ -81,7 +81,7 @@ CREATE TABLE `publishers` (
   `contactID` integer NOT NULL,
   `servicesFee` float(3) DEFAULT 30,
   `description` text,
-  `logo_img` blob,
+  `logo_img` MEDIUMBLOB,
   `publisherWeb` text,
   `joinDate` timestamp DEFAULT CURRENT_TIMESTAMP,
   `modifyDate` timestamp DEFAULT CURRENT_TIMESTAMP
@@ -242,4 +242,3 @@ END;
 //
 
 DELIMITER ;
-
