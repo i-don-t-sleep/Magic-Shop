@@ -1,0 +1,1 @@
+SELECT (SELECT COUNT(*) FROM Users WHERE joinDate >= DATE_SUB(NOW(), INTERVAL 30 DAY)) AS new_users_30days;

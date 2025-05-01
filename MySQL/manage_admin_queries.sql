@@ -2,8 +2,8 @@ SELECT fullName, email, location, joinDate, role
 FROM (
 	SELECT CONCAT(Users.name, " ", Users.surname) as fullName, EmailAddress.email, CONCAT(Address.city, ", ", Address.country) as location, Users.joinDate, Users.role
     FROM Users
-    JOIN ContactInfo ON Users.defaultContactInfoID = ContactInfo.contactInfoID
-    JOIN EmailAddress ON ContactInfo.defaultEmailAddressID = EmailAddress.emailAddressID
+    JOIN ContactInfo ON Users.contactInfoID = ContactInfo.contactInfoID
+    JOIN EmailAddress ON ContactInfo.defaultEmailAddress = EmailAddress.email
     JOIN Address ON ContactInfo.defaultAddressID = Address.addressID
     WHERE role = 'Data Entry Admin' OR role = 'Super Admin'
 ) AS AdminManagementQueries
