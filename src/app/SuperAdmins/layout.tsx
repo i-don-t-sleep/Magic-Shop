@@ -18,6 +18,7 @@ import {
   ShieldIcon,
 } from "@/components/ui/icons"
 import { Button } from "@/components/ui/button"
+import { showSuccessToast, showErrorToast, showLoadingToast } from '@/components/notify/Toast'
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
@@ -49,7 +50,8 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
   const handleLogout = async () => {
     try {
-      await fetch('/api/LogoutAPI', { method: 'GET' })
+      await fetch('/api/LogoutAPI', { method: 'POST' })
+      showLoadingToast('Log Out...')
       router.push('/LoginPage')
     } catch (error) {
       console.error("Logout failed", error)
@@ -194,7 +196,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
               </span>
               <div onClick={handleLogout} title="Click to Logout" className="h-10 w-10 rounded-full bg-zinc-700 overflow-hidden">
                 <Image
-                  src={`/api/image?path=${profilePicture}`}
+                  src={`/api/blob/users/${encodeURIComponent(displayName)}`} //{`/api/image?path=${profilePicture}`}
                   alt="Profile"
                   width={40}
                   height={40}

@@ -11,266 +11,274 @@ import { ProductCard } from "@/components/product-card"
 // Mock product data
 const mockProducts = [
   {
-    title: "2024 Digital & Physical Core Rulebook Bundle",
+    name: "2024 Digital & Physical Core Rulebook Bundle",
     price: "$179.97",
-    inventory: 2704,
+    quantity: 2704,
     imageUrl: "cf27466446e6da568b1eae990514f787.png",
     href: "core-rulebook-bundle",
   },
   {
-    title: "2024 Dungeon Master's Guide Digital + Physical Bundle",
+    name: "2024 Dungeon Master's Guide Digital + Physical Bundle",
     price: "$59.99",
-    inventory: 142,
+    quantity: 142,
     imageUrl: "dcfbd4a80d735ed524c31123e084659c.png",
     href: "dungeon-masters-guide",
   },
   {
-    title: "2024 Player's Handbook Digital + Physical Bundle",
+    name: "2024 Player's Handbook Digital + Physical Bundle",
     price: "$59.99",
-    inventory: 573,
+    quantity: 573,
     imageUrl: "dc84620855214ac09da2632bd939da1f.png",
     href: "players-handbook",
   },
   {
-    title: "Vecna: Eve of Ruin Digital + Physical Bundle",
+    name: "Vecna: Eve of Ruin Digital + Physical Bundle",
     price: "$69.95",
-    inventory: 25,
+    quantity: 25,
     imageUrl: "036c70a2a0fc58eb24a89b0d7c4dcdab.png",
     href: "vecna-eve-of-ruin",
   },
   {
-    title: "Quests from the Infinite Staircase Digital + Physical Bundle",
+    name: "Quests from the Infinite Staircase Digital + Physical Bundle",
     price: "$69.95",
-    inventory: 0,
+    quantity: 0,
     imageUrl: "2c4c88e9ecc12670d82aece0ec209b09.png",
     href: "infinite-staircase",
   },
   {
-    title: "D&D Campaign Case: Creatures",
+    name: "D&D Campaign Case: Creatures",
     price: "$64.99",
-    inventory: 89,
+    quantity: 89,
     imageUrl: "f9657989f2f325adb5a1a578f97643ab.png",
     href: "campaign-case-creatures",
   },
   {
-    title: "D&D Expansion Gift Set Digital + Physical Bundle",
+    name: "D&D Expansion Gift Set Digital + Physical Bundle",
     price: "$169.95",
-    inventory: 42,
+    quantity: 42,
     imageUrl: "036c70a2a0fc58eb24a89b0d7c4dcdab.png",
     href: "expansion-gift-set",
   },
   {
-    title: "Tasha's Cauldron of Everything",
+    name: "Tasha's Cauldron of Everything",
     price: "$49.95",
-    inventory: 215,
+    quantity: 215,
     imageUrl: "dcfbd4a80d735ed524c31123e084659c.png",
     href: "tashas-cauldron",
   },
   {
-    title: "Xanathar's Guide to Everything",
+    name: "Xanathar's Guide to Everything",
     price: "$49.95",
-    inventory: 178,
+    quantity: 178,
     imageUrl: "dc84620855214ac09da2632bd939da1f.png",
     href: "xanathars-guide",
   },
   {
-    title: "Mordenkainen's Tome of Foes",
+    name: "Mordenkainen's Tome of Foes",
     price: "$49.95",
-    inventory: 0,
+    quantity: 0,
     imageUrl: "2c4c88e9ecc12670d82aece0ec209b09.png",
     href: "mordenkainens-tome",
   },
   {
-    title: "Volo's Guide to Monsters",
+    name: "Volo's Guide to Monsters",
     price: "$49.95",
-    inventory: 67,
+    quantity: 67,
     imageUrl: "cf27466446e6da568b1eae990514f787.png",
     href: "volos-guide",
   },
   {
-    title: "Fizban's Treasury of Dragons",
+    name: "Fizban's Treasury of Dragons",
     price: "$49.95",
-    inventory: 93,
+    quantity: 93,
     imageUrl: "f9657989f2f325adb5a1a578f97643ab.png",
     href: "fizbans-treasury",
   },
   {
-    title: "Sword Coast Adventurer's Guide",
+    name: "Sword Coast Adventurer's Guide",
     price: "$39.95",
-    inventory: 124,
+    quantity: 124,
     imageUrl: "036c70a2a0fc58eb24a89b0d7c4dcdab.png",
     href: "sword-coast",
   },
   {
-    title: "Ghosts of Saltmarsh",
+    name: "Ghosts of Saltmarsh",
     price: "$49.95",
-    inventory: 56,
+    quantity: 56,
     imageUrl: "dcfbd4a80d735ed524c31123e084659c.png",
     href: "ghosts-saltmarsh",
   },
   {
-    title: "Curse of Strahd",
+    name: "Curse of Strahd",
     price: "$49.95",
-    inventory: 0,
+    quantity: 0,
     imageUrl: "2c4c88e9ecc12670d82aece0ec209b09.png",
     href: "curse-strahd",
   },
   {
-    title: "Icewind Dale: Rime of the Frostmaiden",
+    name: "Icewind Dale: Rime of the Frostmaiden",
     price: "$49.95",
-    inventory: 78,
+    quantity: 78,
     imageUrl: "dc84620855214ac09da2632bd939da1f.png",
     href: "icewind-dale",
   },
   {
-    title: "Baldur's Gate: Descent into Avernus",
+    name: "Baldur's Gate: Descent into Avernus",
     price: "$49.95",
-    inventory: 112,
+    quantity: 112,
     imageUrl: "cf27466446e6da568b1eae990514f787.png",
     href: "baldurs-gate",
   },
   {
-    title: "Waterdeep: Dragon Heist",
+    name: "Waterdeep: Dragon Heist",
     price: "$49.95",
-    inventory: 89,
+    quantity: 89,
     imageUrl: "f9657989f2f325adb5a1a578f97643ab.png",
     href: "waterdeep-dragon-heist",
   },
   // Additional products to demonstrate pagination
   {
-    title: "Waterdeep: Dungeon of the Mad Mage",
+    name: "Waterdeep: Dungeon of the Mad Mage",
     price: "$49.95",
-    inventory: 67,
+    quantity: 67,
     imageUrl: "036c70a2a0fc58eb24a89b0d7c4dcdab.png",
     href: "waterdeep-mad-mage",
   },
   {
-    title: "Mythic Odysseys of Theros",
+    name: "Mythic Odysseys of Theros",
     price: "$49.95",
-    inventory: 45,
+    quantity: 45,
     imageUrl: "dcfbd4a80d735ed524c31123e084659c.png",
     href: "theros",
   },
   {
-    title: "Explorer's Guide to Wildemount",
+    name: "Explorer's Guide to Wildemount",
     price: "$49.95",
-    inventory: 0,
+    quantity: 0,
     imageUrl: "2c4c88e9ecc12670d82aece0ec209b09.png",
     href: "wildemount",
   },
   {
-    title: "Van Richten's Guide to Ravenloft",
+    name: "Van Richten's Guide to Ravenloft",
     price: "$49.95",
-    inventory: 103,
+    quantity: 103,
     imageUrl: "dc84620855214ac09da2632bd939da1f.png",
     href: "ravenloft",
   },
   {
-    title: "The Wild Beyond the Witchlight",
+    name: "The Wild Beyond the Witchlight",
     price: "$49.95",
-    inventory: 87,
+    quantity: 87,
     imageUrl: "cf27466446e6da568b1eae990514f787.png",
     href: "witchlight",
   },
   {
-    title: "Strixhaven: A Curriculum of Chaos",
+    name: "Strixhaven: A Curriculum of Chaos",
     price: "$49.95",
-    inventory: 76,
+    quantity: 76,
     imageUrl: "f9657989f2f325adb5a1a578f97643ab.png",
     href: "strixhaven",
   },
   {
-    title: "Call of the Netherdeep",
+    name: "Call of the Netherdeep",
     price: "$49.95",
-    inventory: 54,
+    quantity: 54,
     imageUrl: "036c70a2a0fc58eb24a89b0d7c4dcdab.png",
     href: "netherdeep",
   },
   {
-    title: "Journeys through the Radiant Citadel",
+    name: "Journeys through the Radiant Citadel",
     price: "$49.95",
-    inventory: 0,
+    quantity: 0,
     imageUrl: "2c4c88e9ecc12670d82aece0ec209b09.png",
     href: "radiant-citadel",
   },
   {
-    title: "Spelljammer: Adventures in Space",
+    name: "Spelljammer: Adventures in Space",
     price: "$69.95",
-    inventory: 123,
+    quantity: 123,
     imageUrl: "dcfbd4a80d735ed524c31123e084659c.png",
     href: "spelljammer",
   },
   {
-    title: "Dragonlance: Shadow of the Dragon Queen",
+    name: "Dragonlance: Shadow of the Dragon Queen",
     price: "$49.95",
-    inventory: 98,
+    quantity: 98,
     imageUrl: "dc84620855214ac09da2632bd939da1f.png",
     href: "dragonlance",
   },
   {
-    title: "Keys from the Golden Vault",
+    name: "Keys from the Golden Vault",
     price: "$49.95",
-    inventory: 76,
+    quantity: 76,
     imageUrl: "cf27466446e6da568b1eae990514f787.png",
     href: "golden-vault",
   },
   {
-    title: "Bigby Presents: Glory of the Giants",
+    name: "Bigby Presents: Glory of the Giants",
     price: "$49.95",
-    inventory: 65,
+    quantity: 65,
     imageUrl: "f9657989f2f325adb5a1a578f97643ab.png",
     href: "glory-giants",
   },
   {
-    title: "Planescape: Adventures in the Multiverse",
+    name: "Planescape: Adventures in the Multiverse",
     price: "$69.95",
-    inventory: 0,
+    quantity: 0,
     imageUrl: "2c4c88e9ecc12670d82aece0ec209b09.png",
     href: "planescape",
   },
   {
-    title: "The Book of Many Things",
+    name: "The Book of Many Things",
     price: "$49.95",
-    inventory: 87,
+    quantity: 87,
     imageUrl: "036c70a2a0fc58eb24a89b0d7c4dcdab.png",
     href: "many-things",
   },
   {
-    title: "Phandelver and Below: The Shattered Obelisk",
+    name: "Phandelver and Below: The Shattered Obelisk",
     price: "$59.95",
-    inventory: 76,
+    quantity: 76,
     imageUrl: "dcfbd4a80d735ed524c31123e084659c.png",
     href: "phandelver",
   },
   {
-    title: "Dice & Miscellany: Vecna",
+    name: "Dice & Miscellany: Vecna",
     price: "$29.95",
-    inventory: 45,
+    quantity: 45,
     imageUrl: "dc84620855214ac09da2632bd939da1f.png",
     href: "dice-vecna",
   },
   {
-    title: "D&D Icons of the Realms: Gargantuan Tiamat",
+    name: "D&D Icons of the Realms: Gargantuan Tiamat",
     price: "$399.99",
-    inventory: 12,
+    quantity: 12,
     imageUrl: "cf27466446e6da568b1eae990514f787.png",
     href: "tiamat",
   },
   {
-    title: "D&D Icons of the Realms: Adult Red Dragon",
+    name: "D&D Icons of the Realms: Adult Red Dragon",
     price: "$89.99",
-    inventory: 0,
+    quantity: 0,
     imageUrl: "2c4c88e9ecc12670d82aece0ec209b09.png",
     href: "red-dragon",
   },
   {
-    title: "D&D Icons of the Realms: Beholder",
+    name: "D&D Icons of the Realms: Beholder",
     price: "$69.99",
-    inventory: 23,
+    quantity: 23,
     imageUrl: "f9657989f2f325adb5a1a578f97643ab.png",
     href: "beholder",
   },
 ]
+
+type Product = {
+  name: string
+  price: string
+  quantity: number
+  imageUrl: string
+  href: string
+}
 
 export default function ProductsPage() {
   const [searchQuery, setSearchQuery] = useState("")
@@ -280,15 +288,18 @@ export default function ProductsPage() {
   const [showItemsPerPageDropdown, setShowItemsPerPageDropdown] = useState(false)
   const [itemsPerPageInput, setItemsPerPageInput] = useState(productsPerPage.toString())
   const [showItemsPerPageInput, setShowItemsPerPageInput] = useState(false)
+  const [products, setProducts] = useState<Product[]>([])
+  const [loading, setLoading] = useState(true)
 
   // Reference to the bottom of the page for scrolling
   const bottomRef = useRef<HTMLDivElement>(null)
 
   // Filter products based on search query
-  const filteredProducts = mockProducts.filter((product) =>
-    product.title.toLowerCase().includes(searchQuery.toLowerCase()),
+  //mockProducts can replace in products
+  const filteredProducts = products.filter(product =>
+    product.name.toLowerCase().includes(searchQuery.toLowerCase())
   )
-
+  
   // Calculate total pages
   const totalPages = Math.ceil(filteredProducts.length / productsPerPage)
 
@@ -296,6 +307,8 @@ export default function ProductsPage() {
   const indexOfLastProduct = currentPage * productsPerPage
   const indexOfFirstProduct = indexOfLastProduct - productsPerPage
   const currentProducts = filteredProducts.slice(indexOfFirstProduct, indexOfLastProduct)
+
+  
 
   // Change page and scroll to bottom
   const paginate = (pageNumber: number) => {
@@ -329,11 +342,24 @@ export default function ProductsPage() {
     return Array.from({ length: j }, (_, i) => baseMultiple * (j - i)) //4 16 40 100 200
   }
 
-  // Update the useEffect to adjust productsPerPage when cardsPerRow changes
   useEffect(() => {
-    // When cards per row changes, adjust products per page to be a multiple of cards per row
+    setLoading(true)
+    // 1) Fetch ข้อมูลจาก API ตอน mount หรือเมื่อ cardsPerRow เปลี่ยน (ตอนแรก cardsPerRow = 3 ก็จะ fetch ครั้งแรก)
+    fetch("/api/products")
+      .then(res => res.json())
+      .then((data: Product[]) => setProducts(data))
+      .catch(err => console.error("Fetch products error:", err))
+    .finally(() => {
+      setLoading(false)
+    })
+    // 2) ปรับ productsPerPage เมื่อ cardsPerRow เปลี่ยน
     setProductsPerPage(cardsPerRow * Math.ceil(productsPerPage / cardsPerRow))
   }, [cardsPerRow])
+
+
+  if (loading) {
+    return <div className="p-4 text-zinc-400">Loading...</div>
+  }
 
   // Generate page numbers
   const pageNumbers = []

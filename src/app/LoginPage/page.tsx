@@ -29,7 +29,12 @@ export default function LoginPage() {
     const data = await res.json()
   
     if (data.success) {
-      router.push('/SuperAdmins/dashboard')
+      switch (data.role) {
+        case "Super Admin": router.push('/SuperAdmins/dashboard')
+        break; 
+        default: router.push('/Login')
+        break; 
+      }
       showSuccessToast('Login Complete!')
     } else {
       showErrorToast(data.message)

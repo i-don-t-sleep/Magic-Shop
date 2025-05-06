@@ -24,7 +24,7 @@ export default function ReportsPage() {
   return (
     <div className="pt-3 flex flex-col h-full overflow-hidden">
       <div className="px-6 pb-3 flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Reports</h1>
+        <h1 className="text-3xl font-bold"></h1>
         <Button variant="outline" className="border-zinc-700 text-white">
           <Filter className="h-4 w-4 mr-2" />
           Filter

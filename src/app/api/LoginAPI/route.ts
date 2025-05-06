@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server'
 import { cookies } from 'next/headers'
 import bcrypt from 'bcryptjs'
 import { connectDB } from '@/lib/db'
-import { RowDataPacket } from 'mysql2'
+import { RowDataPacket, ResultSetHeader } from 'mysql2'
 import { NextResponse } from "next/server"
 
 export async function POST(req: NextRequest) {
@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
   try {
     const db = await connectDB()
     const [rows] = await db.query<RowDataPacket[]>(
-      'SELECT Username, Password, profilePicture FROM Admins WHERE Username = ?',
+      'SELECT password, role FROM users WHERE username = ?',
       [username]
     )
 
@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
     }
 
     const user = rows[0]
-    const isMatch = await bcrypt.compare(password, user.Password)
+    const isMatch = await bcrypt.compare(password, user.password)
 
     if (!isMatch) {
       return Response.json({ success: false,field:'error' , message: 'Invalid username or password' }, { status: 401 })
@@ -40,18 +40,23 @@ export async function POST(req: NextRequest) {
     const response = NextResponse.json({
       success: true,
       message: "Login successful",
-      username: user.Username,
-      profilePicture: `users/${user.profilePicture}` || "users/unnamed.png",
+      username: username,
+      role: user.role,
     })
   
     response.headers.set(
       "Set-Cookie",
       `account-info=${encodeURIComponent(JSON.stringify({
-        username: user.Username,
-        profilePicture: user.profilePicture || "users/unnamed.png"
-      }))}; Path=/; Max-Age=86400; SameSite=Lax`
+        username: username,
+        role: user.role,
+      }))}; Path=/; Max-Age=86400; SameSite=Strict`
     )
   
+    await db.execute<ResultSetHeader>(
+      "UPDATE users SET	sessionState = ? WHERE username = ?",
+      ["Online", username]
+    )
+
     return response
   } catch (error: any) {
     return Response.json({

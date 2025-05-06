@@ -897,8 +897,6 @@ export default function UsersPage() {
   return (
     <div className="pt-3 flex flex-col h-full overflow-hidden">
       <div className="px-6 pb-3 flex flex-col h-full">
-        <h1 className="text-3xl font-bold mb-6">Manage Users</h1>
-
         <div className="flex justify-between items-center mb-6">
           <div className="w-full max-w-md">
             <Input
