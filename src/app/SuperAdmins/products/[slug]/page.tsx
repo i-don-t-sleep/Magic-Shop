@@ -37,7 +37,7 @@ export default function ProductDetail() {
           setNotFound(true)
           return null
         }
-        if (!res.ok) throw new Error(`Status ${res.status}`)
+        if (!res.ok) throw new Error(`Status ${res.status}\n ${JSON.stringify(res)} slug:${slug}`)
         return res.json() as Promise<ProductData>
       })
       .then(data => {
@@ -58,15 +58,13 @@ export default function ProductDetail() {
   if (loading) {
     return <div className="p-4 text-zinc-400">Loading...</div>
   }
-
   if (notFound) {
     return (
       <div className="min-h-screen flex items-center justify-center text-red-500">
         <div>
           <h2 className="text-2xl font-bold mb-2">Product Not Found</h2>
-          <p>ขออภัย ไม่พบสินค้านี้ในระบบค่ะ</p>
           <Button onClick={() => router.back()} className="mt-4">
-            กลับไปหน้าสินค้า
+            Back to Products Page.
           </Button>
         </div>
       </div>
@@ -82,19 +80,18 @@ export default function ProductDetail() {
   }
 
   if (!product) {
-    // กรณีที่ไม่มี error แต่ product เป็น null
     return (
       <div className="p-4 text-red-500">
-        เกิดข้อผิดพลาดในการโหลดข้อมูลค่ะ
+        Error load data.
       </div>
     )
   }
 
-  // 4) ถ้ามี product จริงๆ ถึงแสดง UI ปกติ
   const isOutOfStock = product.inventory === 0
 
   return (
     <div className="min-h-screen text-white p-4">
+      {/*<p>{JSON.stringify(product)} {product.name}</p>*/}
       <div className="max-w-7xl mx-auto">
         <div className="mb-6">
           <button
@@ -105,7 +102,6 @@ export default function ProductDetail() {
             Back to Products
           </button>
         </div>
-
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <div className="aspect-square relative rounded-lg overflow-hidden">
             <Image

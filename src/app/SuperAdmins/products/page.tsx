@@ -345,7 +345,7 @@ export default function ProductsPage() {
   useEffect(() => {
     setLoading(true)
     // 1) Fetch ข้อมูลจาก API ตอน mount หรือเมื่อ cardsPerRow เปลี่ยน (ตอนแรก cardsPerRow = 3 ก็จะ fetch ครั้งแรก)
-    fetch("/api/products")
+    fetch("/api/products?sort=price-asc")
       .then(res => res.json())
       .then((data: Product[]) => setProducts(data))
       .catch(err => console.error("Fetch products error:", err))
