@@ -1,276 +1,11 @@
 "use client"
 
-import type React from "react"
-
 import { useState, useRef, useEffect } from "react"
-import { ChevronDown, ChevronLeft, ChevronRight, Filter, Plus, Search } from "lucide-react"
+import { ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Filter, Plus, Search, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ProductCard } from "@/components/product-card"
-
-// Mock product data
-const mockProducts = [
-  {
-    name: "2024 Digital & Physical Core Rulebook Bundle",
-    price: "$179.97",
-    quantity: 2704,
-    imageUrl: "cf27466446e6da568b1eae990514f787.png",
-    href: "core-rulebook-bundle",
-  },
-  {
-    name: "2024 Dungeon Master's Guide Digital + Physical Bundle",
-    price: "$59.99",
-    quantity: 142,
-    imageUrl: "dcfbd4a80d735ed524c31123e084659c.png",
-    href: "dungeon-masters-guide",
-  },
-  {
-    name: "2024 Player's Handbook Digital + Physical Bundle",
-    price: "$59.99",
-    quantity: 573,
-    imageUrl: "dc84620855214ac09da2632bd939da1f.png",
-    href: "players-handbook",
-  },
-  {
-    name: "Vecna: Eve of Ruin Digital + Physical Bundle",
-    price: "$69.95",
-    quantity: 25,
-    imageUrl: "036c70a2a0fc58eb24a89b0d7c4dcdab.png",
-    href: "vecna-eve-of-ruin",
-  },
-  {
-    name: "Quests from the Infinite Staircase Digital + Physical Bundle",
-    price: "$69.95",
-    quantity: 0,
-    imageUrl: "2c4c88e9ecc12670d82aece0ec209b09.png",
-    href: "infinite-staircase",
-  },
-  {
-    name: "D&D Campaign Case: Creatures",
-    price: "$64.99",
-    quantity: 89,
-    imageUrl: "f9657989f2f325adb5a1a578f97643ab.png",
-    href: "campaign-case-creatures",
-  },
-  {
-    name: "D&D Expansion Gift Set Digital + Physical Bundle",
-    price: "$169.95",
-    quantity: 42,
-    imageUrl: "036c70a2a0fc58eb24a89b0d7c4dcdab.png",
-    href: "expansion-gift-set",
-  },
-  {
-    name: "Tasha's Cauldron of Everything",
-    price: "$49.95",
-    quantity: 215,
-    imageUrl: "dcfbd4a80d735ed524c31123e084659c.png",
-    href: "tashas-cauldron",
-  },
-  {
-    name: "Xanathar's Guide to Everything",
-    price: "$49.95",
-    quantity: 178,
-    imageUrl: "dc84620855214ac09da2632bd939da1f.png",
-    href: "xanathars-guide",
-  },
-  {
-    name: "Mordenkainen's Tome of Foes",
-    price: "$49.95",
-    quantity: 0,
-    imageUrl: "2c4c88e9ecc12670d82aece0ec209b09.png",
-    href: "mordenkainens-tome",
-  },
-  {
-    name: "Volo's Guide to Monsters",
-    price: "$49.95",
-    quantity: 67,
-    imageUrl: "cf27466446e6da568b1eae990514f787.png",
-    href: "volos-guide",
-  },
-  {
-    name: "Fizban's Treasury of Dragons",
-    price: "$49.95",
-    quantity: 93,
-    imageUrl: "f9657989f2f325adb5a1a578f97643ab.png",
-    href: "fizbans-treasury",
-  },
-  {
-    name: "Sword Coast Adventurer's Guide",
-    price: "$39.95",
-    quantity: 124,
-    imageUrl: "036c70a2a0fc58eb24a89b0d7c4dcdab.png",
-    href: "sword-coast",
-  },
-  {
-    name: "Ghosts of Saltmarsh",
-    price: "$49.95",
-    quantity: 56,
-    imageUrl: "dcfbd4a80d735ed524c31123e084659c.png",
-    href: "ghosts-saltmarsh",
-  },
-  {
-    name: "Curse of Strahd",
-    price: "$49.95",
-    quantity: 0,
-    imageUrl: "2c4c88e9ecc12670d82aece0ec209b09.png",
-    href: "curse-strahd",
-  },
-  {
-    name: "Icewind Dale: Rime of the Frostmaiden",
-    price: "$49.95",
-    quantity: 78,
-    imageUrl: "dc84620855214ac09da2632bd939da1f.png",
-    href: "icewind-dale",
-  },
-  {
-    name: "Baldur's Gate: Descent into Avernus",
-    price: "$49.95",
-    quantity: 112,
-    imageUrl: "cf27466446e6da568b1eae990514f787.png",
-    href: "baldurs-gate",
-  },
-  {
-    name: "Waterdeep: Dragon Heist",
-    price: "$49.95",
-    quantity: 89,
-    imageUrl: "f9657989f2f325adb5a1a578f97643ab.png",
-    href: "waterdeep-dragon-heist",
-  },
-  // Additional products to demonstrate pagination
-  {
-    name: "Waterdeep: Dungeon of the Mad Mage",
-    price: "$49.95",
-    quantity: 67,
-    imageUrl: "036c70a2a0fc58eb24a89b0d7c4dcdab.png",
-    href: "waterdeep-mad-mage",
-  },
-  {
-    name: "Mythic Odysseys of Theros",
-    price: "$49.95",
-    quantity: 45,
-    imageUrl: "dcfbd4a80d735ed524c31123e084659c.png",
-    href: "theros",
-  },
-  {
-    name: "Explorer's Guide to Wildemount",
-    price: "$49.95",
-    quantity: 0,
-    imageUrl: "2c4c88e9ecc12670d82aece0ec209b09.png",
-    href: "wildemount",
-  },
-  {
-    name: "Van Richten's Guide to Ravenloft",
-    price: "$49.95",
-    quantity: 103,
-    imageUrl: "dc84620855214ac09da2632bd939da1f.png",
-    href: "ravenloft",
-  },
-  {
-    name: "The Wild Beyond the Witchlight",
-    price: "$49.95",
-    quantity: 87,
-    imageUrl: "cf27466446e6da568b1eae990514f787.png",
-    href: "witchlight",
-  },
-  {
-    name: "Strixhaven: A Curriculum of Chaos",
-    price: "$49.95",
-    quantity: 76,
-    imageUrl: "f9657989f2f325adb5a1a578f97643ab.png",
-    href: "strixhaven",
-  },
-  {
-    name: "Call of the Netherdeep",
-    price: "$49.95",
-    quantity: 54,
-    imageUrl: "036c70a2a0fc58eb24a89b0d7c4dcdab.png",
-    href: "netherdeep",
-  },
-  {
-    name: "Journeys through the Radiant Citadel",
-    price: "$49.95",
-    quantity: 0,
-    imageUrl: "2c4c88e9ecc12670d82aece0ec209b09.png",
-    href: "radiant-citadel",
-  },
-  {
-    name: "Spelljammer: Adventures in Space",
-    price: "$69.95",
-    quantity: 123,
-    imageUrl: "dcfbd4a80d735ed524c31123e084659c.png",
-    href: "spelljammer",
-  },
-  {
-    name: "Dragonlance: Shadow of the Dragon Queen",
-    price: "$49.95",
-    quantity: 98,
-    imageUrl: "dc84620855214ac09da2632bd939da1f.png",
-    href: "dragonlance",
-  },
-  {
-    name: "Keys from the Golden Vault",
-    price: "$49.95",
-    quantity: 76,
-    imageUrl: "cf27466446e6da568b1eae990514f787.png",
-    href: "golden-vault",
-  },
-  {
-    name: "Bigby Presents: Glory of the Giants",
-    price: "$49.95",
-    quantity: 65,
-    imageUrl: "f9657989f2f325adb5a1a578f97643ab.png",
-    href: "glory-giants",
-  },
-  {
-    name: "Planescape: Adventures in the Multiverse",
-    price: "$69.95",
-    quantity: 0,
-    imageUrl: "2c4c88e9ecc12670d82aece0ec209b09.png",
-    href: "planescape",
-  },
-  {
-    name: "The Book of Many Things",
-    price: "$49.95",
-    quantity: 87,
-    imageUrl: "036c70a2a0fc58eb24a89b0d7c4dcdab.png",
-    href: "many-things",
-  },
-  {
-    name: "Phandelver and Below: The Shattered Obelisk",
-    price: "$59.95",
-    quantity: 76,
-    imageUrl: "dcfbd4a80d735ed524c31123e084659c.png",
-    href: "phandelver",
-  },
-  {
-    name: "Dice & Miscellany: Vecna",
-    price: "$29.95",
-    quantity: 45,
-    imageUrl: "dc84620855214ac09da2632bd939da1f.png",
-    href: "dice-vecna",
-  },
-  {
-    name: "D&D Icons of the Realms: Gargantuan Tiamat",
-    price: "$399.99",
-    quantity: 12,
-    imageUrl: "cf27466446e6da568b1eae990514f787.png",
-    href: "tiamat",
-  },
-  {
-    name: "D&D Icons of the Realms: Adult Red Dragon",
-    price: "$89.99",
-    quantity: 0,
-    imageUrl: "2c4c88e9ecc12670d82aece0ec209b09.png",
-    href: "red-dragon",
-  },
-  {
-    name: "D&D Icons of the Realms: Beholder",
-    price: "$69.99",
-    quantity: 23,
-    imageUrl: "f9657989f2f325adb5a1a578f97643ab.png",
-    href: "beholder",
-  },
-]
+import { Loading } from "@/components/loading-comp"
 
 type Product = {
   name: string
@@ -280,86 +15,201 @@ type Product = {
   href: string
 }
 
+type FilterState = {
+  category: string
+  publisher: string
+  minPrice: string
+  maxPrice: string
+  status: string
+  sort: string
+}
+
 export default function ProductsPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [currentPage, setCurrentPage] = useState(1)
-  const [productsPerPage, setProductsPerPage] = useState(6)
-  const [cardsPerRow, setCardsPerRow] = useState(3)
+  const [productsPerPage, setProductsPerPage] = useState(4)
+  const [IsFirstfetch, setIsFirstfetch] = useState(false)
+  const [cardsPerRow, setCardsPerRow] = useState(4)
   const [showItemsPerPageDropdown, setShowItemsPerPageDropdown] = useState(false)
-  const [itemsPerPageInput, setItemsPerPageInput] = useState(productsPerPage.toString())
-  const [showItemsPerPageInput, setShowItemsPerPageInput] = useState(false)
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
+  const [totalRecords, setTotalRecords] = useState(0)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [isOverflowing, setIsOverflowing] = useState(false)
+  const [showFilters, setShowFilters] = useState(false)
 
-  // Reference to the bottom of the page for scrolling
-  const bottomRef = useRef<HTMLDivElement>(null)
+  // Add this right after the showFilters state declaration:
+  // Ref for the filter dialog
+  const filterDialogRef = useRef<HTMLDivElement>(null)
 
-  // Filter products based on search query
-  //mockProducts can replace in products
-  const filteredProducts = products.filter(product =>
-    product.name.toLowerCase().includes(searchQuery.toLowerCase())
-  )
-  
+  // Handle click outside to close filter dialog
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (showFilters && filterDialogRef.current && !filterDialogRef.current.contains(event.target as Node)) {
+        setShowFilters(false)
+      }
+    }
+
+    // Add event listener when filter dialog is open
+    if (showFilters) {
+      document.addEventListener("mousedown", handleClickOutside)
+    }
+
+    // Clean up
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside)
+    }
+  }, [showFilters])
+
+  // Filter state
+  const [filters, setFilters] = useState<FilterState>({
+    category: "",
+    publisher: "",
+    minPrice: "",
+    maxPrice: "",
+    status: "",
+    sort: "price-asc",
+  })
+
+  // Categories and publishers for filter dropdowns
+  const [categories, setCategories] = useState<string[]>([
+    "Books",
+    "Miniatures",
+    "Dice",
+    "Accessories",
+    "Digital Content",
+  ])
+
+  const [publishers, setPublishers] = useState<string[]>([
+    "Wizards of the Coast",
+    "Paizo",
+    "Critical Role",
+    "Kobold Press",
+    "Green Ronin",
+  ])
+
   // Calculate total pages
-  const totalPages = Math.ceil(filteredProducts.length / productsPerPage)
+  const totalPages = Math.ceil(totalRecords / productsPerPage)
 
-  // Get current products
-  const indexOfLastProduct = currentPage * productsPerPage
-  const indexOfFirstProduct = indexOfLastProduct - productsPerPage
-  const currentProducts = filteredProducts.slice(indexOfFirstProduct, indexOfLastProduct)
-
-  
-
-  // Change page and scroll to bottom
+  // Change page
   const paginate = (pageNumber: number) => {
     setCurrentPage(pageNumber)
-    bottomRef.current?.scrollIntoView({ behavior: "auto" })
-  }
-
-  // Handle items per page change
-  const handleItemsPerPageChange = () => {
-    const newValue = Number.parseInt(itemsPerPageInput)
-    if (!isNaN(newValue) && newValue > 0) {
-      setProductsPerPage(newValue)
-      // Reset to page 1 when changing items per page
-      setCurrentPage(1)
-    }
-    setShowItemsPerPageInput(false)
-  }
-
-  // Handle input keydown for items per page
-  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
-      handleItemsPerPageChange()
-    }
   }
 
   // Generate items per page options based on cards per row
   const getItemsPerPageOptions = () => {
     const baseMultiple = cardsPerRow
-    // Generate 5 options (1-5 rows of cards)
-    let j = 10;
-    return Array.from({ length: j }, (_, i) => baseMultiple * (j - i)) //4 16 40 100 200
+    const multipliers = [25, 10, 8, 4, 2, 1]
+    return multipliers.map((multiplier) => baseMultiple * multiplier)
   }
 
-  useEffect(() => {
-    setLoading(true)
-    // 1) Fetch ข้อมูลจาก API ตอน mount หรือเมื่อ cardsPerRow เปลี่ยน (ตอนแรก cardsPerRow = 3 ก็จะ fetch ครั้งแรก)
-    fetch("/api/products?sort=price-asc")
-      .then(res => res.json())
-      .then((data: Product[]) => setProducts(data))
-      .catch(err => console.error("Fetch products error:", err))
-    .finally(() => {
-      setLoading(false)
+  // Handle filter change
+  const handleFilterChange = (key: keyof FilterState, value: string) => {
+    setFilters((prev) => ({ ...prev, [key]: value }))
+    setCurrentPage(1) // Reset to first page when filter changes
+  }
+
+  // Reset filters
+  const resetFilters = () => {
+    setFilters({
+      category: "",
+      publisher: "",
+      minPrice: "",
+      maxPrice: "",
+      status: "",
+      sort: "price-asc",
     })
-    // 2) ปรับ productsPerPage เมื่อ cardsPerRow เปลี่ยน
-    setProductsPerPage(cardsPerRow * Math.ceil(productsPerPage / cardsPerRow))
-  }, [cardsPerRow])
-
-
-  if (loading) {
-    return <div className="p-4 text-zinc-400">Loading...</div>
+    setCurrentPage(1)
   }
+
+  // Fetch products from API
+  const fetchProducts = async () => {
+    if (!IsFirstfetch) {
+      setLoading(true)
+      setIsFirstfetch(true)
+    }
+    try {
+      const queryParams = new URLSearchParams({
+        page: currentPage.toString(),
+        limit: productsPerPage.toString(),
+        sort: filters.sort,
+      })
+
+      if (searchQuery) {
+        queryParams.append("search", searchQuery)
+      }
+
+      // Add filters to query params
+      if (filters.category) {
+        queryParams.append("category", filters.category)
+      }
+
+      if (filters.publisher) {
+        queryParams.append("publisher", filters.publisher)
+      }
+
+      if (filters.minPrice) {
+        queryParams.append("minPrice", filters.minPrice)
+      }
+
+      if (filters.maxPrice) {
+        queryParams.append("maxPrice", filters.maxPrice)
+      }
+
+      if (filters.status) {
+        queryParams.append("status", filters.status)
+      }
+
+      const response = await fetch(`/api/products?${queryParams.toString()}`)
+      const data = await response.json()
+
+      setProducts(data.data)
+      setTotalRecords(data.total)
+    } catch (error) {
+      console.error("Error fetching products:", error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Check if content is overflowing
+  useEffect(() => {
+    const el = containerRef.current
+    if (el) {
+      const checkOverflow = () => {
+        const overflow = el.scrollHeight > el.clientHeight
+        setIsOverflowing(overflow)
+      }
+
+      checkOverflow()
+
+      // Also check on window resize
+      window.addEventListener("resize", checkOverflow)
+      return () => window.removeEventListener("resize", checkOverflow)
+    }
+  }, [products, loading])
+
+  // Fetch products when page, productsPerPage, search, or filters change
+  useEffect(() => {
+    fetchProducts()
+  }, [currentPage, productsPerPage, searchQuery, filters])
+
+  // Update productsPerPage when cardsPerRow changes
+  useEffect(() => {
+    // This effect should only run after initial render
+    if (IsFirstfetch) {
+      // Calculate current multiplier (how many rows of products)
+      const currentMultiplier = Math.round(productsPerPage / cardsPerRow)
+
+      // Set new products per page maintaining the same multiplier
+      const newProductsPerPage = cardsPerRow * currentMultiplier
+
+      // Only update if it's different to avoid infinite loop
+      if (newProductsPerPage !== productsPerPage) {
+        setProductsPerPage(newProductsPerPage)
+      }
+    }
+  }, [cardsPerRow, IsFirstfetch])
 
   // Generate page numbers
   const pageNumbers = []
@@ -367,240 +217,471 @@ export default function ProductsPage() {
     pageNumbers.push(i)
   }
 
+  // Check if any filters are active
+  const hasActiveFilters =
+    filters.category ||
+    filters.publisher ||
+    filters.minPrice ||
+    filters.maxPrice ||
+    filters.status ||
+    filters.sort !== "price-asc"
+
+  // Add this right before the return statement in ProductsPage
   return (
-    <div className="pt-3 flex flex-col h-full overflow-hidden">
-      {/* Header with search and filters */}
-      <div className="px-6 pb-3 flex justify-between items-center">
-        <div className="w-full max-w-md">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
-            <Input
-              placeholder="Search products..."
-              className="pl-10 bg-zinc-900 border-zinc-800 text-white"
-              value={searchQuery}
-              onChange={(e) => {
-                setSearchQuery(e.target.value)
-                setCurrentPage(1) // Reset to first page on search
-              }}
-            />
-          </div>
-        </div>
-
-        <div className="flex gap-2">
-          <Button variant="outline" className="border-zinc-700 text-white">
-            <Filter className="h-4 w-4 mr-2" />
-            Filter
-            <ChevronDown className="h-4 w-4 ml-2" />
-          </Button>
-          <Button variant="outline" className="border-zinc-700 text-white">
-            <Plus className="h-4 w-4 mr-2" />
-            Add
-          </Button>
-        </div>
-      </div>
-
-      {/* Products grid */}
-      <div className="flex-1 px-6 overflow-y-auto">
-        {currentProducts.length > 0 ? (
-          <div
-            className={`grid grid-cols-1 md:grid-cols-2 ${
-              cardsPerRow === 3 ? "lg:grid-cols-3" : "lg:grid-cols-4"
-            } gap-6`}
-          >
-            {currentProducts.map((product, index) => (
-              <ProductCard key={index} {...product} />
-            ))}
-          </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center h-full py-16">
-            <div className="text-2xl font-bold text-zinc-500 mb-4">No products found</div>
-            <div className="text-zinc-400 mb-8">Try adjusting your search or filter criteria</div>
-            {searchQuery && (
-              <Button
-                variant="outline"
-                className="border-zinc-700 text-white"
-                onClick={() => {
-                  setSearchQuery("")
-                  setCurrentPage(1)
+    <>
+      <div className="pt-3 flex flex-col h-full overflow-hidden">
+        {/* Header with search and filters */}
+        <div className="px-6 pb-3 flex justify-between items-center">
+          <div className="w-full max-w-md">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
+              <Input
+                placeholder="Search products..."
+                className="pl-10 bg-zinc-900 border-zinc-800 text-white"
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value)
+                  setCurrentPage(1) // Reset to first page on search
                 }}
-              >
-                Clear Search
-              </Button>
-            )}
+              />
+            </div>
+          </div>
+
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              className={`border-zinc-700 text-white ${hasActiveFilters ? "bg-magic-red" : ""}`}
+              onClick={() => setShowFilters(!showFilters)}
+            >
+              <Filter className="h-4 w-4 mr-2" />
+              Filter
+              {hasActiveFilters && (
+                <span className="ml-2 bg-white text-black rounded-full w-5 h-5 flex items-center justify-center text-xs">
+                  {Object.values(filters).filter((v) => v && v !== "price-asc").length}
+                </span>
+              )}
+              <ChevronDown className="h-4 w-4 ml-2" />
+            </Button>
+            <Button variant="outline" className="border-zinc-700 text-white">
+              <Plus className="h-4 w-4 mr-2" />
+              Add
+            </Button>
+          </div>
+        </div>
+
+        {/* Filter panel */}
+        {showFilters && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center">
+            {/* Semi-transparent overlay */}
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
+
+            {/* Filter dialog */}
+            <div className="relative z-10 w-full max-w-3xl mx-auto" ref={filterDialogRef}>
+              <div className="p-[1px] bg-gradient-to-t from-magic-border-1 to-magic-border-2 rounded-[19px]">
+                <div className="p-[1px] bg-gradient-to-t from-magic-iron-1 from-20% to-magic-iron-2 to-80% rounded-[18px] overflow-hidden">
+                  <div className="p-6">
+                    <div className="flex justify-between items-center mb-4">
+                      <h3 className="text-xl font-medium">Filter Products</h3>
+                      <Button variant="ghost" size="sm" onClick={() => setShowFilters(false)}>
+                        <X className="h-5 w-5" />
+                      </Button>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {/* Category filter */}
+                      <div>
+                        <label className="block text-sm font-medium mb-2">Category</label>
+                        <select
+                          className="w-full p-2 rounded bg-zinc-900 border border-zinc-700 text-white"
+                          value={filters.category}
+                          onChange={(e) => handleFilterChange("category", e.target.value)}
+                        >
+                          <option value="">All Categories</option>
+                          {categories.map((category) => (
+                            <option key={category} value={category}>
+                              {category}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Publisher filter */}
+                      <div>
+                        <label className="block text-sm font-medium mb-2">Publisher</label>
+                        <select
+                          className="w-full p-2 rounded bg-zinc-900 border border-zinc-700 text-white"
+                          value={filters.publisher}
+                          onChange={(e) => handleFilterChange("publisher", e.target.value)}
+                        >
+                          <option value="">All Publishers</option>
+                          {publishers.map((publisher) => (
+                            <option key={publisher} value={publisher}>
+                              {publisher}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Status filter */}
+                      <div>
+                        <label className="block text-sm font-medium mb-2">Status</label>
+                        <select
+                          className="w-full p-2 rounded bg-zinc-900 border border-zinc-700 text-white"
+                          value={filters.status}
+                          onChange={(e) => handleFilterChange("status", e.target.value)}
+                        >
+                          <option value="">All Status</option>
+                          <option value="Available">Available</option>
+                          <option value="Out of Stock">Out of Stock</option>
+                        </select>
+                      </div>
+
+                      {/* Price range */}
+                      <div>
+                        <label className="block text-sm font-medium mb-2">Min Price</label>
+                        <Input
+                          type="number"
+                          placeholder="Min Price"
+                          className="bg-zinc-900 border-zinc-700 text-white"
+                          value={filters.minPrice}
+                          onChange={(e) => handleFilterChange("minPrice", e.target.value)}
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium mb-2">Max Price</label>
+                        <Input
+                          type="number"
+                          placeholder="Max Price"
+                          className="bg-zinc-900 border-zinc-700 text-white"
+                          value={filters.maxPrice}
+                          onChange={(e) => handleFilterChange("maxPrice", e.target.value)}
+                        />
+                      </div>
+
+                      {/* Sort order */}
+                      <div>
+                        <label className="block text-sm font-medium mb-2">Sort By</label>
+                        <select
+                          className="w-full p-2 rounded bg-zinc-900 border border-zinc-700 text-white"
+                          value={filters.sort}
+                          onChange={(e) => handleFilterChange("sort", e.target.value)}
+                        >
+                          <option value="price-asc">Price: Low to High</option>
+                          <option value="price-desc">Price: High to Low</option>
+                          <option value="quantity-asc">Quantity: Low to High</option>
+                          <option value="quantity-desc">Quantity: High to Low</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end mt-6">
+                      <Button variant="outline" className="border-zinc-700 text-white mr-3" onClick={resetFilters}>
+                        Reset Filters
+                      </Button>
+                      <Button className="bg-magic-red hover:bg-red-700" onClick={() => setShowFilters(false)}>
+                        Apply Filters
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         )}
-
-        {/* Reference div for scrolling to bottom */}
-        <div ref={bottomRef} className="h-4"></div>
-
-        {/* Pagination at the bottom */}
-        <div className="flex justify-between items-center mt-1">
-          {/* Left side - pagination controls */}
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="icon"
-              className="h-10 w-10 rounded-full border-zinc-700"
-              onClick={() => paginate(Math.max(1, currentPage - 1))}
-              disabled={currentPage === 1}
+        {/*flex-1 px-6 pb-6 overflow-y-auto*/}
+        {/* Products grid */}
+        <div className={`flex-1 overflow-y-auto ${isOverflowing ? "pl-6 pr-4" : "px-6"}`} ref={containerRef}>
+          {loading ? (
+            <Loading />
+          ) : products.length > 0 ? (
+            <div
+              className={`grid grid-cols-1 md:grid-cols-2 ${
+                cardsPerRow === 3 ? "lg:grid-cols-3" : "lg:grid-cols-4"
+              } gap-6`}
             >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-
-            {totalPages <= 5 ? (
-              // If we have 5 or fewer pages, show all page numbers
-              pageNumbers.map((number) => (
-                <Button
-                  key={number}
-                  variant={currentPage === number ? "default" : "outline"}
-                  className={`h-8 w-8 rounded-full p-0 ${
-                    currentPage === number ? "bg-red-600 hover:bg-red-700 border-red-600" : "border-zinc-700"
-                  }`}
-                  onClick={() => paginate(number)}
-                >
-                  {number}
-                </Button>
-              ))
-            ) : (
-              // If we have more than 5 pages, show a subset with ellipsis
-              <>
-                {/* First page */}
-                <Button
-                  variant={currentPage === 1 ? "default" : "outline"}
-                  className={`h-8 w-8 rounded-full p-0 ${
-                    currentPage === 1 ? "bg-red-600 hover:bg-red-700 border-red-600" : "border-zinc-700"
-                  }`}
-                  onClick={() => paginate(1)}
-                >
-                  1
-                </Button>
-
-                {/* Show ellipsis if current page is far from the start */}
-                {currentPage > 3 && <span className="px-2 text-zinc-500">...</span>}
-
-                {/* Pages around current page */}
-                {pageNumbers
-                  .filter(
-                    (number) =>
-                      number !== 1 &&
-                      number !== totalPages &&
-                      ((currentPage <= 3 && number <= 4) ||
-                        (currentPage > totalPages - 3 && number > totalPages - 4) ||
-                        (number >= currentPage - 1 && number <= currentPage + 1)),
-                  )
-                  .map((number) => (
+              {products.map((product, index) => (
+                <ProductCard key={index} {...product} />
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center h-full py-16">
+              <div className="text-2xl font-bold text-zinc-500 mb-4">No products found</div>
+              <div className="text-zinc-400 mb-8">Try adjusting your search or filter criteria</div>
+              {(searchQuery || hasActiveFilters) && (
+                <div className="flex gap-4">
+                  {searchQuery && (
                     <Button
-                      key={number}
-                      variant={currentPage === number ? "default" : "outline"}
-                      className={`h-8 w-8 rounded-full p-0 ${
-                        currentPage === number ? "bg-red-600 hover:bg-red-700 border-red-600" : "border-zinc-700"
-                      }`}
-                      onClick={() => paginate(number)}
+                      variant="outline"
+                      className="border-zinc-700 text-white"
+                      onClick={() => {
+                        setSearchQuery("")
+                        setCurrentPage(1)
+                      }}
                     >
-                      {number}
+                      Clear Search
                     </Button>
-                  ))}
+                  )}
+                  {hasActiveFilters && (
+                    <Button variant="outline" className="border-zinc-700 text-white" onClick={resetFilters}>
+                      Clear Filters
+                    </Button>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
 
-                {/* Show ellipsis if current page is far from the end */}
-                {currentPage < totalPages - 2 && <span className="px-2 text-zinc-500">...</span>}
+          {/* Pagination for overflow content */}
+          {products.length > 0 && isOverflowing && (
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              cardsPerRow={cardsPerRow}
+              setCardsPerRow={setCardsPerRow}
+              productsPerPage={productsPerPage}
+              setProductsPerPage={setProductsPerPage}
+              pageNumbers={pageNumbers}
+              paginate={paginate}
+              showItemsPerPageDropdown={showItemsPerPageDropdown}
+              setShowItemsPerPageDropdown={setShowItemsPerPageDropdown}
+              getItemsPerPageOptions={getItemsPerPageOptions}
+            />
+          )}
+        </div>
 
-                {/* Last page */}
-                {totalPages > 1 && (
-                  <Button
-                    variant={currentPage === totalPages ? "default" : "outline"}
-                    className={`h-8 w-8 rounded-full p-0 ${
-                      currentPage === totalPages ? "bg-red-600 hover:bg-red-700 border-red-600" : "border-zinc-700"
-                    }`}
-                    onClick={() => paginate(totalPages)}
-                  >
-                    {totalPages}
-                  </Button>
-                )}
-              </>
-            )}
-
-            <Button
-              variant="outline"
-              size="icon"
-              className="h-10 w-10 rounded-full border-zinc-700"
-              onClick={() => paginate(Math.min(totalPages, currentPage + 1))}
-              disabled={currentPage === totalPages}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
+        {/* Pagination for non-overflow content */}
+        {products.length > 0 && !isOverflowing && (
+          <div className="px-6">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              cardsPerRow={cardsPerRow}
+              setCardsPerRow={setCardsPerRow}
+              productsPerPage={productsPerPage}
+              setProductsPerPage={setProductsPerPage}
+              pageNumbers={pageNumbers}
+              paginate={paginate}
+              showItemsPerPageDropdown={showItemsPerPageDropdown}
+              setShowItemsPerPageDropdown={setShowItemsPerPageDropdown}
+              getItemsPerPageOptions={getItemsPerPageOptions}
+            />
           </div>
+        )}
+      </div>
+    </>
+  )
+}
 
-          {/* Right side - cards per row and items per page controls */}
-          <div className="flex items-center gap-4">
-            {/* Cards per row controls */}
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-zinc-400">Cards per row:</span>
-              <div className="flex">
+type PaginationProps = {
+  currentPage: number
+  totalPages: number
+  cardsPerRow: number
+  setCardsPerRow: (value: number) => void
+  productsPerPage: number
+  setProductsPerPage: (value: number) => void
+  pageNumbers: number[]
+  paginate: (page: number) => void
+  showItemsPerPageDropdown: boolean
+  setShowItemsPerPageDropdown: (val: boolean) => void
+  getItemsPerPageOptions: () => number[]
+}
+
+export function Pagination({
+  currentPage,
+  totalPages,
+  cardsPerRow,
+  setCardsPerRow,
+  productsPerPage,
+  setProductsPerPage,
+  pageNumbers,
+  paginate,
+  showItemsPerPageDropdown,
+  setShowItemsPerPageDropdown,
+  getItemsPerPageOptions,
+}: PaginationProps) {
+  // Add a ref for the dropdown button and a useEffect for click outside
+  const dropdownRef = useRef<HTMLDivElement>(null)
+
+  // Handle click outside to close dropdown
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowItemsPerPageDropdown(false)
+      }
+    }
+
+    // Add event listener when dropdown is open
+    if (showItemsPerPageDropdown) {
+      document.addEventListener("mousedown", handleClickOutside)
+    }
+
+    // Clean up
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside)
+    }
+  }, [showItemsPerPageDropdown, setShowItemsPerPageDropdown])
+
+  // Keep track of the multiplier index when changing cards per row
+  const handleCardsPerRowChange = (newCardsPerRow: number) => {
+    // Calculate current multiplier
+    const currentMultiplier = Math.round(productsPerPage / cardsPerRow)
+
+    // Set new products per page maintaining the same multiplier
+    setProductsPerPage(newCardsPerRow * currentMultiplier)
+    setCardsPerRow(newCardsPerRow)
+  }
+
+  return (
+    <div className="flex justify-between items-center mt-4">
+      {/* Left side - pagination controls - only show if more than one page */}
+      {totalPages > 1 ? (
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-10 w-10 rounded-full border-zinc-700"
+            onClick={() => paginate(Math.max(1, currentPage - 1))}
+            disabled={currentPage === 1}
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+
+          {totalPages <= 5 ? (
+            pageNumbers.map((number) => (
+              <Button
+                key={number}
+                variant={currentPage === number ? "default" : "outline"}
+                className={`h-8 w-8 rounded-full p-0 ${
+                  currentPage === number ? "bg-red-600 hover:bg-red-700 border-red-600" : "border-zinc-700"
+                }`}
+                onClick={() => paginate(number)}
+              >
+                {number}
+              </Button>
+            ))
+          ) : (
+            <>
+              <Button
+                variant={currentPage === 1 ? "default" : "outline"}
+                className={`h-8 w-8 rounded-full p-0 ${
+                  currentPage === 1 ? "bg-red-600 hover:bg-red-700 border-red-600" : "border-zinc-700"
+                }`}
+                onClick={() => paginate(1)}
+              >
+                1
+              </Button>
+
+              {currentPage > 3 && <span className="px-2 text-zinc-500">...</span>}
+
+              {pageNumbers
+                .filter(
+                  (number) =>
+                    number !== 1 &&
+                    number !== totalPages &&
+                    ((currentPage <= 3 && number <= 4) ||
+                      (currentPage > totalPages - 3 && number > totalPages - 4) ||
+                      (number >= currentPage - 1 && number <= currentPage + 1)),
+                )
+                .map((number) => (
+                  <Button
+                    key={number}
+                    variant={currentPage === number ? "default" : "outline"}
+                    className={`h-8 w-8 rounded-full p-0 ${
+                      currentPage === number ? "bg-red-600 hover:bg-red-700 border-red-600" : "border-zinc-700"
+                    }`}
+                    onClick={() => paginate(number)}
+                  >
+                    {number}
+                  </Button>
+                ))}
+
+              {currentPage < totalPages - 2 && <span className="px-2 text-zinc-500">...</span>}
+
+              {totalPages > 1 && (
                 <Button
-                  variant={cardsPerRow === 3 ? "default" : "outlineWithOut"}
-                  size="icon"
-                  className={`h-8 w-8 rounded-l-md rounded-r-none ${
-                    cardsPerRow === 3 ? "bg-red-600 hover:bg-red-700 border-red-600" : "border-zinc-700"
+                  variant={currentPage === totalPages ? "default" : "outline"}
+                  className={`h-8 w-8 rounded-full p-0 ${
+                    currentPage === totalPages ? "bg-red-600 hover:bg-red-700 border-red-600" : "border-zinc-700"
                   }`}
-                  onClick={() => {
-                    setCardsPerRow(3)
-                    bottomRef.current?.scrollIntoView({ behavior: "auto" })
-                  }}
+                  onClick={() => paginate(totalPages)}
                 >
-                  <span className="text-xs">3</span>
+                  {totalPages}
                 </Button>
-                <Button
-                  variant={cardsPerRow === 4 ? "default" : "outlineWithOut"}
-                  size="icon"
-                  className={`h-8 w-8 rounded-l-none rounded-r-md ${
-                    cardsPerRow === 4 ? "bg-red-600 hover:bg-red-700 border-red-600" : "border-zinc-700"
-                  }`}
-                  onClick={() => {
-                    setCardsPerRow(4)
-                    bottomRef.current?.scrollIntoView({ behavior: "auto" })
-                  }}
-                >
-                  <span className="text-xs">4</span>
-                </Button>
-              </div>
-            </div>
+              )}
+            </>
+          )}
 
-            {/* Items per page dropdown */}
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-zinc-400">Items per page:</span>
-              <div className="relative">
-                <Button
-                  variant="outline"
-                  className="h-8 border-zinc-700 text-white"
-                  onClick={() => {
-                    setShowItemsPerPageDropdown(!showItemsPerPageDropdown)
-                    bottomRef.current?.scrollIntoView({ behavior: "auto" })
-                  }}
-                >
-                  {productsPerPage}
-                  <ChevronDown className="ml-1 h-3 w-3" />
-                </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-10 w-10 rounded-full border-zinc-700"
+            onClick={() => paginate(Math.min(totalPages, currentPage + 1))}
+            disabled={currentPage === totalPages}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+      ) : (
+        <div></div>
+      )}
 
-                {showItemsPerPageDropdown && (
-                  <div className="absolute right-0 bottom-full mb-1 w-24 bg-zinc-800 border border-zinc-700 rounded-md shadow-lg z-10">
-                    {getItemsPerPageOptions().map((option) => (
-                      <button
-                        key={option}
-                        className="w-full text-left px-3 py-2 text-sm text-white hover:bg-zinc-700"
-                        onClick={() => {
-                          setProductsPerPage(option)
-                          setShowItemsPerPageDropdown(false)
-                          setCurrentPage(1) // Reset to page 1 when changing items per page
-                          bottomRef.current?.scrollIntoView({ behavior: "auto" })
-                        }}
-                      >
-                        {option}
-                      </button>
-                    ))}
-                  </div>
-                )}
+      {/* Right side - cards per row and items per page controls */}
+      <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-zinc-400">Cards per row:</span>
+          <div className="flex">
+            {[3, 4].map((val) => (
+              <Button
+                key={val}
+                variant={cardsPerRow === val ? "default" : "outlineWithOut"}
+                size="icon"
+                className={`h-8 w-8 ${
+                  val === 3 ? "rounded-l-md rounded-r-none" : "rounded-l-none rounded-r-md"
+                } ${cardsPerRow === val ? "bg-red-600 hover:bg-red-700 border-red-600" : "border-zinc-700"}`}
+                onClick={() => handleCardsPerRowChange(val)}
+              >
+                <span className="text-xs">{val}</span>
+              </Button>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-zinc-400">Items per page:</span>
+          <div className="relative" ref={dropdownRef}>
+            <Button
+              variant={showItemsPerPageDropdown ? "default" : "default"}
+              className={`h-8 border-zinc-700 text-white`}
+              onClick={() => {
+                setShowItemsPerPageDropdown(!showItemsPerPageDropdown)
+              }}
+            >
+              {productsPerPage}
+              {showItemsPerPageDropdown ? (
+                <ChevronUp className="ml-1 h-3 w-3" />
+              ) : (
+                <ChevronDown className="ml-1 h-3 w-3" />
+              )}
+            </Button>
+
+            {showItemsPerPageDropdown && (
+              <div className="absolute right-0 bottom-full mb-1 w-24 bg-zinc-800 border border-zinc-700 rounded-md shadow-lg z-10">
+                {getItemsPerPageOptions().map((option) => (
+                  <button
+                    key={option}
+                    className="w-full text-left px-3 py-2 text-sm text-white hover:bg-zinc-700"
+                    onClick={() => {
+                      setProductsPerPage(option)
+                      setShowItemsPerPageDropdown(false)
+                      paginate(1)
+                    }}
+                  >
+                    {option}
+                  </button>
+                ))}
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>

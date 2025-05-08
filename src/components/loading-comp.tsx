@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
 
-export default function loading() {
+export function Loading() {
   const [dots, setDots] = useState('')
 
   useEffect(() => {
@@ -14,9 +14,9 @@ export default function loading() {
   }, [])
 
   return (
-     <div className="flex flex-col items-center justify-center h-screen bg-magic-back text-white">
+     <div className="flex flex-col items-center justify-center h-screen text-white">
 
-      <div className="mb-15">
+     {/*<div className="mb-15">
         <Image
           src="/magic-shop_Logo.svg"
           alt="Logo"
@@ -25,7 +25,7 @@ export default function loading() {
           className="object-contain"
           draggable={false}
         />
-      </div>
+      </div> */}
 
       <div className="animate-spin rounded-full h-60 w-60 border-t-4 border-b-4 border-red-600 mb-8"></div>
       <p className="text-3xl font-medium">Loading{dots}</p>

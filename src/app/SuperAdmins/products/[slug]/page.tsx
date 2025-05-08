@@ -5,6 +5,7 @@ import Image from "next/image"
 import { useParams, useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
+import { Loading } from "@/components/loading-comp"
 
 interface ProductData {
   name: string
@@ -56,7 +57,7 @@ export default function ProductDetail() {
 
   // 3) แสดงผลตามสถานะ
   if (loading) {
-    return <div className="p-4 text-zinc-400">Loading...</div>
+    return <Loading></Loading>
   }
   if (notFound) {
     return (

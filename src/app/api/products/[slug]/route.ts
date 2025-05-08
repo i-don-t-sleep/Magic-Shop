@@ -67,8 +67,8 @@ export async function GET(
     `,
     [pidValue]
   )
-
-  if (rows.length === 0) {
+  
+  if (rows.length === 0 || (nameSlug!=slugify(rows[0].name) || pubSlug!=slugify(rows[0].publisherName))) {
     return NextResponse.json({ error: 'Product not found' }, { status: 404 })
   }
 

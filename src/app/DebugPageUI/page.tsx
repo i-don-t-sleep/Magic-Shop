@@ -3,8 +3,9 @@
 
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
+import { Loading } from '@/components/loading-comp'
 
-export default function Loading() {
+export default function loading() {
   const [dots, setDots] = useState('')
 
   useEffect(() => {
@@ -14,23 +15,13 @@ export default function Loading() {
     return () => clearInterval(interval)
   }, [])
 
-  return (
-     <div className="flex flex-col items-center justify-center h-screen bg-black text-white">
+  return <div>
+      <div className="flex flex-col h-screen">
+        <div>Header</div>
+        <div className="flex-grow overflow-auto">Content <br/>  <br/>  <br/>  <br/>  <br/>  <br/>  <br/>  <br/>  <br/>  <br/>  <br/>  <br/>  <br/>  <br/>  <br/>  <br/>  <br/>  <br/>  <br/>  <br/>  <br/>  <br/>  <br/>  <br/>  <br/>  <br/>  <br/>  <br/>  <br/>  <br/>  <br/>  <br/>  <br/> ds
 
-      <div className="mb-15">
-        <Image
-          src="/magic-shop_Logo.svg"
-          alt="Logo"
-          width={250}
-          height={250}
-          className="object-contain"
-          draggable={false}
-        />
+        </div>
+        <div>Footer</div>
       </div>
-
-      <div className="animate-spin rounded-full h-60 w-60 border-t-4 border-b-4 border-red-600 mb-8"></div>
-      <p className="text-3xl font-medium">Loading{dots}</p>
-    </div>
-    
-  )
+  </div>
 }

@@ -39,12 +39,12 @@
 }
 
 @theme {
-  --color-magic-red: #E8443C;
-  --color-magic-iron-1: #1B1B1B;
+  --color-magic-red: #e8443c;
+  --color-magic-iron-1: #1b1b1b;
   --color-magic-iron-2: #222222;
   --color-magic-back: #161616;
   --color-magic-border-1: #323232;
-  --color-magic-border-2: #4E4E4E;
+  --color-magic-border-2: #4e4e4e;
 
   --toast-bg-color: #1f2937;
   --toast-fg-color: rgb(255, 255, 255);
@@ -95,14 +95,14 @@
 }
 
 @font-face {
-  font-family: 'Dragon Hunter';
-  src: url('/fonts/DRAGON HUNTER.otf');
+  font-family: "Dragon Hunter";
+  src: url("/fonts/DRAGON HUNTER.otf");
   font-weight: normal;
   font-style: normal;
 }
 
 .font-dragon {
-  font-family: 'Dragon Hunter', sans-serif;
+  font-family: "Dragon Hunter", sans-serif;
 }
 
 body {
@@ -129,6 +129,9 @@ div.normal_toast {
 .normal_toast:hover {
   background-color: var(--toast-hover-bg-color);
 }
+
+
+
 
 /* ------ Scrollbar base ------ */
 ::-webkit-scrollbar {
@@ -193,13 +196,4 @@ div.normal_toast {
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.552 0.016 285.938);
-}
-
-@layer base {
-  * {
-    @apply border-border outline-ring/50;
-  }
-  body {
-    @apply bg-background text-foreground;
-  }
 }
