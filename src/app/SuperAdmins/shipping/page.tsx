@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Filter, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import {ShippingItem,ShippingCard} from "@/components/shipping-card"
+import { type ShippingItem, ShippingCard } from "@/components/shipping-card"
 
 export default function ShippingPage() {
   const [searchQuery, setSearchQuery] = useState("")

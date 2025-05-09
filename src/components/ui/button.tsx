@@ -55,7 +55,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
     const button = (
       <button
-        className={`
+        className={`select-none
           ${hasBorder ? "peer" : ""}
           relative z-10 inline-flex items-center justify-center
           text-sm font-medium ring-offset-background

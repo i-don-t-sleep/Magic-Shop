@@ -1,20 +1,17 @@
 // app/api/products/[slug]/route.ts
-import { NextResponse } from 'next/server'
-import { RowDataPacket } from 'mysql2'
-import { connectDB } from '@/lib/db'
+import { NextResponse } from "next/server"
+import type { RowDataPacket } from "mysql2"
+import { connectDB } from "@/lib/db"
 
 /** slugify ต้องตรงกับฝั่ง client */
 function slugify(s: string): string {
   return s
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')  // non-alphanumeric → hyphen
-    .replace(/^-+|-+$/g, '')      // trim leading/trailing hyphens
+    .replace(/[^a-z0-9]+/g, "-") // non-alphanumeric → hyphen
+    .replace(/^-+|-+$/g, "") // trim leading/trailing hyphens
 }
 
-export async function GET(
-  request: Request,
-  context: { params: Promise<{ slug: string }> }
-) {
+export async function GET(request: Request, context: { params: Promise<{ slug: string }> }) {
   const db = await connectDB()
 
   // รอ params.resolve
@@ -25,22 +22,22 @@ export async function GET(
   // e.g. '2024-digital-&-physical-core-rulebook-bundle&pid=3&pub=wangshu-corporation'
 
   // หา index ของ key แต่ละตัว
-  const pidKey = '&pid='
-  const pubKey = '&pub='
+  const pidKey = "&pid="
+  const pubKey = "&pub="
   const pidIdx = decoded.indexOf(pidKey)
   const pubIdx = decoded.indexOf(pubKey)
 
   if (pidIdx === -1 || pubIdx === -1) {
-    return NextResponse.json({ error: 'Invalid parameters' }, { status: 400 })
+    return NextResponse.json({ error: "Invalid parameters" }, { status: 400 })
   }
 
   // แยกค่า nameSlug, pidValue, pubSlug
   const nameSlug = decoded.substring(0, pidIdx)
   const pidValue = Number(decoded.substring(pidIdx + pidKey.length, pubIdx))
-  const pubSlug  = decoded.substring(pubIdx + pubKey.length)
+  const pubSlug = decoded.substring(pubIdx + pubKey.length)
 
   if (!nameSlug || isNaN(pidValue) || !pubSlug) {
-    return NextResponse.json({ error: 'Invalid parameters' }, { status: 400 })
+    return NextResponse.json({ error: "Invalid parameters" }, { status: 400 })
   }
 
   // Query DB ด้วย id อย่างเดียว
@@ -65,11 +62,11 @@ export async function GET(
     WHERE p.id = ?
     LIMIT 1
     `,
-    [pidValue]
+    [pidValue],
   )
-  
-  if (rows.length === 0 || (nameSlug!=slugify(rows[0].name) || pubSlug!=slugify(rows[0].publisherName))) {
-    return NextResponse.json({ error: 'Product not found' }, { status: 404 })
+
+  if (rows.length === 0 || nameSlug != slugify(rows[0].name) || pubSlug != slugify(rows[0].publisherName)) {
+    return NextResponse.json({ error: "Product not found" }, { status: 404 })
   }
 
   const r = rows[0] as {
@@ -82,19 +79,17 @@ export async function GET(
   }
 
   // สร้าง imageUrl แล้วส่ง JSON กลับ
-  const imageUrl = r.firstImgId
-    ? `/api/blob/productimages/${r.firstImgId}`
-    : `/api/images/placeholder.png`
+  const imageUrl = r.firstImgId ? `/api/blob/productimages/${r.firstImgId}` : `/api/images/placeholder.png`
   process.stdout.write(` ${imageUrl}\n`)
   return NextResponse.json(
     {
-      id           : r.id,
-      name         : r.name,
-      price        : `$${Number(r.price).toFixed(2)}`,
-      quantity     : r.quantity,
+      id: r.id,
+      name: r.name,
+      price: `$${Number(r.price).toFixed(2)}`,
+      quantity: r.quantity,
       publisherName: r.publisherName,
-      imageUrl     : imageUrl,
+      imageUrl: imageUrl,
     },
-    { status: 200 }
+    { status: 200 },
   )
 }

@@ -142,7 +142,8 @@ export default function UsersPage() {
       location: "Rome,IT",
       joined: "September 8, 2019",
       frequency: 55,
-    },{
+    },
+    {
       id: 1,
       name: "Leslie Maya",
       email: "leslie@gmail.com",
@@ -262,7 +263,8 @@ export default function UsersPage() {
       location: "Rome,IT",
       joined: "September 8, 2019",
       frequency: 55,
-    },{
+    },
+    {
       id: 1,
       name: "Leslie Maya",
       email: "leslie@gmail.com",
@@ -382,7 +384,8 @@ export default function UsersPage() {
       location: "Rome,IT",
       joined: "September 8, 2019",
       frequency: 55,
-    },{
+    },
+    {
       id: 1,
       name: "Leslie Maya",
       email: "leslie@gmail.com",
@@ -502,7 +505,8 @@ export default function UsersPage() {
       location: "Rome,IT",
       joined: "September 8, 2019",
       frequency: 55,
-    },{
+    },
+    {
       id: 1,
       name: "Leslie Maya",
       email: "leslie@gmail.com",
@@ -622,7 +626,8 @@ export default function UsersPage() {
       location: "Rome,IT",
       joined: "September 8, 2019",
       frequency: 55,
-    },{
+    },
+    {
       id: 1,
       name: "Leslie Maya",
       email: "leslie@gmail.com",
@@ -742,7 +747,8 @@ export default function UsersPage() {
       location: "Rome,IT",
       joined: "September 8, 2019",
       frequency: 55,
-    },{
+    },
+    {
       id: 1,
       name: "Leslie Maya",
       email: "leslie@gmail.com",

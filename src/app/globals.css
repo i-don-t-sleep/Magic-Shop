@@ -1,8 +1,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-@custom-variant dark (&:is(.dark *));
-
 :root {
   --primary: oklch(0.21 0.006 285.885);
   --primary-foreground: oklch(0.985 0 0);
@@ -129,9 +127,6 @@ div.normal_toast {
 .normal_toast:hover {
   background-color: var(--toast-hover-bg-color);
 }
-
-
-
 
 /* ------ Scrollbar base ------ */
 ::-webkit-scrollbar {

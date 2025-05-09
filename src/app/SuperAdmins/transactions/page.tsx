@@ -1,10 +1,10 @@
 "use client"
 
 import { useState } from "react"
-import { Check, Clock, Filter, Search, Settings, X } from "lucide-react"
+import { Filter, Search, Settings } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { TransactionCard, Transaction } from "@/components/transaction-card"
+import { TransactionCard, type Transaction } from "@/components/transaction-card"
 
 export default function TransactionsPage() {
   const [searchQuery, setSearchQuery] = useState("")

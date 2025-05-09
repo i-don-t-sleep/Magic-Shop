@@ -1,7 +1,8 @@
-import { NextRequest, NextResponse } from "next/server"
+import { type NextRequest, NextResponse } from "next/server"
 import { connectDB } from "@/lib/db"
-import { RowDataPacket } from "mysql2/promise"
+import type { RowDataPacket, ResultSetHeader } from "mysql2/promise"
 
+// GET handler for fetching products (existing code)
 export async function GET(req: NextRequest) {
   const db = await connectDB()
   const url = req.nextUrl
@@ -15,8 +16,8 @@ export async function GET(req: NextRequest) {
   const stockstatus = url.searchParams.get("status")
   const search = url.searchParams.get("search")?.trim()
 
-  const limit = parseInt(url.searchParams.get("limit") || "2")
-  const page = parseInt(url.searchParams.get("page") || "1")
+  const limit = Number.parseInt(url.searchParams.get("limit") || "6")
+  const page = Number.parseInt(url.searchParams.get("page") || "1")
   const offset = (page - 1) * limit
 
   // ====== WHERE clause ======
@@ -93,14 +94,12 @@ export async function GET(req: NextRequest) {
 
   const [rows] = await db.query<RowDataPacket[]>(sql, queryArgs)
 
-  const data = rows.map(r => ({
+  const data = rows.map((r) => ({
     name: r.name,
     price: `$${Number(r.price).toFixed(2)}`,
     quantity: r.quantity,
-    imageUrl: r.firstImgId
-      ? `/api/blob/productimages/${r.firstImgId}`
-      : `/api/images/placeholder.png`,
-    href: `${slugify(r.name)}&pid=${r.id}&pub=${slugify(r.publisherName)}`
+    imageUrl: r.firstImgId ? `/api/blob/productimages/${r.firstImgId}` : `/api/images/placeholder.png`,
+    href: `${slugify(r.name)}&pid=${r.id}&pub=${slugify(r.publisherName)}`,
   }))
 
   // ====== Query total count ======
@@ -116,7 +115,107 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({ data, total: totalCount })
 }
 
-// helper: สร้าง slug จากชื่อสินค้า
+
+
+
+// POST handler for creating a new product
+export async function POST(req: NextRequest) {
+  try {
+    const formData = await req.formData()
+
+    // Extract product data
+    const name = formData.get("name") as string
+    const description = formData.get("description") as string
+    const price = Number.parseFloat(formData.get("price") as string)
+    const quantity = Number.parseInt(formData.get("quantity") as string)
+    const category = formData.get("category") as string
+    const publisherId = Number.parseInt(formData.get("publisherId") as string)
+    const warehouseLocation = formData.get("warehouseLocation") as string
+
+    // Validate required fields
+    if (!name || !price || isNaN(price) || !quantity || isNaN(quantity) || !publisherId || isNaN(publisherId)) {
+      return NextResponse.json({ success: false, message: "Missing or invalid required fields" }, { status: 400 })
+    }
+
+    // Determine status based on quantity
+    const status = quantity > 0 ? "Available" : "Out of Stock"
+
+    const db = await connectDB()
+
+    // Start transaction
+    await db.beginTransaction()
+
+    try {
+      // Insert product
+      const [productResult] = await db.execute<ResultSetHeader>(
+        `INSERT INTO products (name, description, price, quantity, category, status, publisherID) 
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [name, description, price, quantity, category, status, publisherId],
+      )
+
+      const productId = (productResult as any)[0]?.insertId || productResult.insertId
+
+      // Handle image uploads
+      const images = formData.getAll("images") as File[]
+
+      if (images && images.length > 0) {
+        for (const image of images) {
+          if (image.size > 0) {
+            const buffer = Buffer.from(await image.arrayBuffer())
+            const imageName = image.name
+            const mimeType = image.type.split("/")[1] // Extract image type (png, jpeg, etc.)
+
+            await db.execute(
+              `INSERT INTO productimages (productID, name, description, img, mimeType) 
+               VALUES (?, ?, ?, ?, ?)`,
+              [productId, imageName, "", buffer, mimeType],
+            )
+          }
+        }
+      }
+
+      // Handle warehouse location if provided
+      if (warehouseLocation) {
+        // Insert into warehouse table
+        await db.execute(
+          `INSERT INTO warehouse (location, productID, capacity) 
+           VALUES (?, ?, ?)`,
+          [warehouseLocation, productId, quantity],
+        )
+
+        // Record product movement (IN)
+        if (quantity > 0) {
+          await db.execute(
+            `INSERT INTO productmovement (productID, warehouseID, movementType, quantity, reason) 
+             VALUES (?, ?, 'IN', ?, ?)`,
+            [productId, warehouseLocation, quantity, "Initial stock"],
+          )
+        }
+      }
+
+      // Commit transaction
+      await db.commit()
+
+      return NextResponse.json({
+        success: true,
+        message: "Product added successfully",
+        productId,
+      })
+    } catch (error) {
+      // Rollback on error
+      await db.rollback()
+      throw error
+    }
+  } catch (error: any) {
+    console.error("Error adding product:", error)
+    return NextResponse.json({ success: false, message: `Error adding product: ${error.message}` }, { status: 500 })
+  }
+}
+
+// Helper function: slugify
 function slugify(s: string) {
-  return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")
+  return s
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
 }

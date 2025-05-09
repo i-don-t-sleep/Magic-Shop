@@ -1,15 +1,13 @@
 "use client"
 
-import { Bell, ChevronDown, Filter, Search } from "lucide-react"
-import Image from "next/image"
+import { ChevronDown, Filter, Search } from "lucide-react"
 import { useState } from "react"
 
 import { ReviewCard } from "@/components/review-card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 
-
-let reviews = [
+const reviews = [
   {
     id: 1,
     title: "2024 Dungeon Master's Guide Digital + Physical Bundle",
@@ -107,12 +105,10 @@ export default function reviewsPage() {
   )
 }
 
-
-
 export function Header({
   searchQuery,
   setSearchQuery,
-  classN = 'px-6 pb-3',
+  classN = "px-6 pb-3",
 }: {
   searchQuery: string
   setSearchQuery: (v: string) => void
@@ -147,15 +143,13 @@ export function Header({
 export function Body({
   searchQuery,
   setSearchQuery,
-  classN = 'px-6 pb-3',
+  classN = "px-6 pb-3",
 }: {
   searchQuery: string
   setSearchQuery: (v: string) => void
   classN?: string
 }) {
-  const filteredReviews = reviews.filter((review) =>
-    review.title.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  const filteredReviews = reviews.filter((review) => review.title.toLowerCase().includes(searchQuery.toLowerCase()))
 
   return (
     <div className={`${classN} space-y-4`}>

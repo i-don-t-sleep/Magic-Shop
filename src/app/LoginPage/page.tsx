@@ -1,12 +1,12 @@
 "use client"
 
-import { FormEvent, useEffect, useState } from "react"
+import { type FormEvent, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { Eye, EyeOff } from "lucide-react"
-import { useRouter } from 'next/navigation'
-import {generateHashedPassword} from  '@/lib/hashPassword'
-import { showSuccessToast, showErrorToast, showLoadingToast } from '@/components/notify/Toast'
+import { useRouter } from "next/navigation"
+import { generateHashedPassword } from "@/lib/hashPassword"
+import { showSuccessToast, showErrorToast } from "@/components/notify/Toast"
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
@@ -19,28 +19,30 @@ export default function LoginPage() {
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
 
-    const res = await fetch('/api/LoginAPI', {
-      method: 'POST',
+    const res = await fetch("/api/LoginAPI", {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({ username, password }),
-    }) 
+    })
     const data = await res.json()
-  
+
     if (data.success) {
       switch (data.role) {
-        case "Super Admin": router.push('/SuperAdmins/dashboard')
-        break; 
-        default: router.push('/Login')
-        break; 
+        case "Super Admin":
+          router.push("/SuperAdmins/dashboard")
+          break
+        default:
+          router.push("/Login")
+          break
       }
-      showSuccessToast('Login Complete!')
+      showSuccessToast("Login Complete!")
     } else {
       showErrorToast(data.message)
 
       const message = data.message.toLowerCase()
-      if (data.field === 'error') {
+      if (data.field === "error") {
         setUsernameError(true)
         setPasswordError(true)
       } else {
@@ -52,36 +54,52 @@ export default function LoginPage() {
 
   const debugPasswordHash = async () => {
     const hashed = await generateHashedPassword(password)
-    showSuccessToast('Copy password hash!')
+    showSuccessToast("Copy password hash!")
   }
 
   return (
     <div className="min-h-screen w-full flex items-center justify-center relative bg-[#161616]">
       {/* Background Image */}
       <div className="absolute inset-0 z-0">
-        <Image src="/Login/background.jpg" alt="Login Background" fill className="object-cover object-bottom-right opacity-70 brightness-100 grayscale" draggable={false} priority />
+        <Image
+          src="/Login/background.jpg"
+          alt="Login Background"
+          fill
+          className="object-cover object-bottom-right opacity-70 brightness-100 grayscale"
+          draggable={false}
+          priority
+        />
       </div>
 
       {/* Logo */}
       <div className="absolute top-10 left-5 z-10">
-          <Image src="magic-shop_Logo.svg" alt="Logo" width={250} height={250} className="object-contain" draggable={false} />
+        <Image
+          src="magic-shop_Logo.svg"
+          alt="Logo"
+          width={250}
+          height={250}
+          className="object-contain"
+          draggable={false}
+        />
       </div>
 
       {/* Login Form */}
       <div className="bg-[#323232]/90 rounded-lg p-8 w-full max-w-md z-10">
-        <h1 className="font-dragon text-white text-4xl font-bold text-center mb-8 select-none" >LOGIN</h1>
+        <h1 className="font-dragon text-white text-4xl font-bold text-center mb-8 select-none">LOGIN</h1>
 
         <form className="space-y-4" onSubmit={handleSubmit}>
           <div>
-            <input type="text" placeholder="Username" 
-            className={`w-full p-3 rounded bg-[#d9d9d9] text-[#161616] outline-none border-2 ${
-              usernameError ? 'bg-[#ff9b85]' : 'bg-[#d9d9d9]'
-            }`}
-            value={username}
-            onChange={(e) => {
-              setUsername(e.target.value)
-              if (usernameError) setUsernameError(false)
-            }}
+            <input
+              type="text"
+              placeholder="Username"
+              className={`w-full p-3 rounded bg-[#d9d9d9] text-[#161616] outline-none border-2 ${
+                usernameError ? "bg-[#ff9b85]" : "bg-[#d9d9d9]"
+              }`}
+              value={username}
+              onChange={(e) => {
+                setUsername(e.target.value)
+                if (usernameError) setUsernameError(false)
+              }}
             />
           </div>
 
@@ -90,7 +108,7 @@ export default function LoginPage() {
               type={showPassword ? "text" : "password"}
               placeholder="Password"
               className={`w-full p-3 rounded bg-[#d9d9d9] text-[#161616] outline-none border-2 ${
-                passwordError ? 'bg-[#ff9b85]' : 'bg-[#d9d9d9]'
+                passwordError ? "bg-[#ff9b85]" : "bg-[#d9d9d9]"
               }`}
               value={password}
               onChange={(e) => {
@@ -116,13 +134,14 @@ export default function LoginPage() {
             </div>
             <Link href="\ForgetPassPage" className="text-white hover:text-[#e8443c] transition-colors cursor-pointer">
               Forget Password?
-           </Link>
+            </Link>
           </div>
-            <button
-              type="submit"
-              className="w-full p-3 bg-[#e8443c] text-white rounded font-medium hover:bg-[#e8443c]/90 transition-colors">
-              Sign In
-            </button>
+          <button
+            type="submit"
+            className="w-full p-3 bg-[#e8443c] text-white rounded font-medium hover:bg-[#e8443c]/90 transition-colors"
+          >
+            Sign In
+          </button>
         </form>
 
         <div className="text-center mt-6 text-white">
@@ -133,18 +152,15 @@ export default function LoginPage() {
         </div>
       </div>
 
-
-     {/* For Debug */}
+      {/* For Debug */}
       <button
         type="submit"
         form="copyPass Has"
         className="absolute bottom-30 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded"
-        onClick={debugPasswordHash}>
-          Copy Pass Hash for DB
+        onClick={debugPasswordHash}
+      >
+        Copy Pass Hash for DB
       </button>
-     
-
-
     </div>
   )
 }

@@ -5,7 +5,8 @@ import { ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Filter, Plus, Search
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ProductCard } from "@/components/product-card"
-import { Loading } from "@/components/loading-comp"
+import { LoadingComp } from "@/components/loading-comp"
+import Link from "next/link"
 
 type Product = {
   name: string
@@ -27,9 +28,9 @@ type FilterState = {
 export default function ProductsPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [currentPage, setCurrentPage] = useState(1)
-  const [productsPerPage, setProductsPerPage] = useState(4)
+  const [productsPerPage, setProductsPerPage] = useState(3)
   const [IsFirstfetch, setIsFirstfetch] = useState(false)
-  const [cardsPerRow, setCardsPerRow] = useState(4)
+  const [cardsPerRow, setCardsPerRow] = useState(3)
   const [showItemsPerPageDropdown, setShowItemsPerPageDropdown] = useState(false)
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
@@ -37,6 +38,28 @@ export default function ProductsPage() {
   const containerRef = useRef<HTMLDivElement>(null)
   const [isOverflowing, setIsOverflowing] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
+  const [isUpdateRows, setisUpdateRows] = useState(false)
+  const [isUpdateItems, setisUpdateItems] = useState(false)
+  const [categoryEnum, setCategoryEnum] = useState<string[]>([])
+  const [statusEnum, setStatusEnum] = useState<string[]>([])
+  const [publisherNames, setPublisherNames] = useState<string[]>([])
+
+  const fetchMetadata = async () => {
+    const res = await fetch("/api/products/meta")
+    const data = await res.json()
+    if (data.success) {
+      setCategoryEnum(data.categoryEnum)
+      setStatusEnum(data.statusEnum)
+      setPublisherNames(data.publishers)
+    } else {
+      console.error("Failed to fetch metadata")
+    }
+  }
+  
+  
+  useEffect(() => {
+    fetchMetadata()
+  }, [])
 
   // Add this right after the showFilters state declaration:
   // Ref for the filter dialog
@@ -70,30 +93,17 @@ export default function ProductsPage() {
     status: "",
     sort: "price-asc",
   })
-
-  // Categories and publishers for filter dropdowns
-  const [categories, setCategories] = useState<string[]>([
-    "Books",
-    "Miniatures",
-    "Dice",
-    "Accessories",
-    "Digital Content",
-  ])
-
-  const [publishers, setPublishers] = useState<string[]>([
-    "Wizards of the Coast",
-    "Paizo",
-    "Critical Role",
-    "Kobold Press",
-    "Green Ronin",
-  ])
-
+  const [pendingFilters, setPendingFilters] = useState<FilterState>(filters)
   // Calculate total pages
   const totalPages = Math.ceil(totalRecords / productsPerPage)
 
   // Change page
   const paginate = (pageNumber: number) => {
     setCurrentPage(pageNumber)
+    containerRef.current?.scrollTo({
+      top: 0,
+      behavior: "auto"
+    })
   }
 
   // Generate items per page options based on cards per row
@@ -111,7 +121,7 @@ export default function ProductsPage() {
 
   // Reset filters
   const resetFilters = () => {
-    setFilters({
+    setPendingFilters({
       category: "",
       publisher: "",
       minPrice: "",
@@ -119,7 +129,6 @@ export default function ProductsPage() {
       status: "",
       sort: "price-asc",
     })
-    setCurrentPage(1)
   }
 
   // Fetch products from API
@@ -169,6 +178,8 @@ export default function ProductsPage() {
       console.error("Error fetching products:", error)
     } finally {
       setLoading(false)
+      setisUpdateRows(false)
+      setisUpdateItems(false)
     }
   }
 
@@ -191,8 +202,9 @@ export default function ProductsPage() {
 
   // Fetch products when page, productsPerPage, search, or filters change
   useEffect(() => {
-    fetchProducts()
-  }, [currentPage, productsPerPage, searchQuery, filters])
+    if (!showFilters)
+      fetchProducts()
+  }, [currentPage, productsPerPage, searchQuery, filters, showFilters])
 
   // Update productsPerPage when cardsPerRow changes
   useEffect(() => {
@@ -246,36 +258,40 @@ export default function ProductsPage() {
               />
             </div>
           </div>
-
           <div className="flex gap-2">
-            <Button
-              variant="outline"
-              className={`border-zinc-700 text-white ${hasActiveFilters ? "bg-magic-red" : ""}`}
-              onClick={() => setShowFilters(!showFilters)}
-            >
-              <Filter className="h-4 w-4 mr-2" />
-              Filter
-              {hasActiveFilters && (
-                <span className="ml-2 bg-white text-black rounded-full w-5 h-5 flex items-center justify-center text-xs">
-                  {Object.values(filters).filter((v) => v && v !== "price-asc").length}
-                </span>
-              )}
-              <ChevronDown className="h-4 w-4 ml-2" />
-            </Button>
-            <Button variant="outline" className="border-zinc-700 text-white">
-              <Plus className="h-4 w-4 mr-2" />
-              Add
-            </Button>
+                <Button
+                  variant="outline"
+                  className={`border-zinc-700 text-white ${hasActiveFilters ? "bg-magic-red" : ""}`}
+                  onClick={() => {
+                    setShowFilters(!showFilters)
+                    setPendingFilters(filters)  // copy ค่าเดิมมาแสดงใน dialog
+                  }}
+                >
+                  <Filter className="h-4 w-4 mr-2" />
+                  Filter
+                  {hasActiveFilters && (
+                    <span className="ml-2 bg-white text-black rounded-full w-5 h-5 flex items-center justify-center text-xs">
+                      {Object.values(filters).filter((v) => v && v !== "price-asc").length}
+                    </span>
+                  )}
+                  <ChevronDown className="h-4 w-4 ml-2" />
+                </Button>
+                <Link href="/SuperAdmins/products/add">
+                  <Button variant="outline" className="border-zinc-700 text-white" >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add
+                  </Button>
+                </Link>
           </div>
         </div>
-
+        
         {/* Filter panel */}
         {showFilters && (
           <div className="fixed inset-0 z-50 flex items-center justify-center">
             {/* Semi-transparent overlay */}
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
 
-            {/* Filter dialog */}
+            {/* Filter dialog relative z-10 w-full max-w-3xl mx-auto*/}
             <div className="relative z-10 w-full max-w-3xl mx-auto" ref={filterDialogRef}>
               <div className="p-[1px] bg-gradient-to-t from-magic-border-1 to-magic-border-2 rounded-[19px]">
                 <div className="p-[1px] bg-gradient-to-t from-magic-iron-1 from-20% to-magic-iron-2 to-80% rounded-[18px] overflow-hidden">
@@ -293,11 +309,11 @@ export default function ProductsPage() {
                         <label className="block text-sm font-medium mb-2">Category</label>
                         <select
                           className="w-full p-2 rounded bg-zinc-900 border border-zinc-700 text-white"
-                          value={filters.category}
-                          onChange={(e) => handleFilterChange("category", e.target.value)}
+                          value={pendingFilters.category}
+                          onChange={(e) => setPendingFilters(prev => ({ ...prev, category: e.target.value }))}
                         >
                           <option value="">All Categories</option>
-                          {categories.map((category) => (
+                          {categoryEnum.map((category) => (
                             <option key={category} value={category}>
                               {category}
                             </option>
@@ -310,11 +326,11 @@ export default function ProductsPage() {
                         <label className="block text-sm font-medium mb-2">Publisher</label>
                         <select
                           className="w-full p-2 rounded bg-zinc-900 border border-zinc-700 text-white"
-                          value={filters.publisher}
-                          onChange={(e) => handleFilterChange("publisher", e.target.value)}
+                          value={pendingFilters.publisher}
+                          onChange={(e) => setPendingFilters(prev => ({ ...prev, publisher: e.target.value }))}
                         >
                           <option value="">All Publishers</option>
-                          {publishers.map((publisher) => (
+                          {publisherNames.map((publisher) => (
                             <option key={publisher} value={publisher}>
                               {publisher}
                             </option>
@@ -327,12 +343,15 @@ export default function ProductsPage() {
                         <label className="block text-sm font-medium mb-2">Status</label>
                         <select
                           className="w-full p-2 rounded bg-zinc-900 border border-zinc-700 text-white"
-                          value={filters.status}
-                          onChange={(e) => handleFilterChange("status", e.target.value)}
+                          value={pendingFilters.status}
+                          onChange={(e) => setPendingFilters(prev => ({ ...prev, status: e.target.value }))}
                         >
                           <option value="">All Status</option>
-                          <option value="Available">Available</option>
-                          <option value="Out of Stock">Out of Stock</option>
+                          {statusEnum.map((status) => (
+                            <option key={status} value={status}>
+                              {status}
+                            </option>
+                          ))}
                         </select>
                       </div>
 
@@ -343,8 +362,8 @@ export default function ProductsPage() {
                           type="number"
                           placeholder="Min Price"
                           className="bg-zinc-900 border-zinc-700 text-white"
-                          value={filters.minPrice}
-                          onChange={(e) => handleFilterChange("minPrice", e.target.value)}
+                          value={pendingFilters.minPrice}
+                          onChange={(e) => setPendingFilters(prev => ({ ...prev, minPrice: e.target.value }))}
                         />
                       </div>
 
@@ -354,8 +373,8 @@ export default function ProductsPage() {
                           type="number"
                           placeholder="Max Price"
                           className="bg-zinc-900 border-zinc-700 text-white"
-                          value={filters.maxPrice}
-                          onChange={(e) => handleFilterChange("maxPrice", e.target.value)}
+                          value={pendingFilters.maxPrice}
+                          onChange={(e) => setPendingFilters(prev => ({ ...prev, maxPrice: e.target.value }))}
                         />
                       </div>
 
@@ -364,8 +383,8 @@ export default function ProductsPage() {
                         <label className="block text-sm font-medium mb-2">Sort By</label>
                         <select
                           className="w-full p-2 rounded bg-zinc-900 border border-zinc-700 text-white"
-                          value={filters.sort}
-                          onChange={(e) => handleFilterChange("sort", e.target.value)}
+                          value={pendingFilters.sort}
+                          onChange={(e) => setPendingFilters(prev => ({ ...prev, sort: e.target.value }))}
                         >
                           <option value="price-asc">Price: Low to High</option>
                           <option value="price-desc">Price: High to Low</option>
@@ -376,10 +395,17 @@ export default function ProductsPage() {
                     </div>
 
                     <div className="flex justify-end mt-6">
-                      <Button variant="outline" className="border-zinc-700 text-white mr-3" onClick={resetFilters}>
+                      <div className="mr-3">
+                      <Button variant="outline" onClick={resetFilters}>
                         Reset Filters
                       </Button>
-                      <Button className="bg-magic-red hover:bg-red-700" onClick={() => setShowFilters(false)}>
+                      </div>
+                      <Button className="bg-magic-red hover:bg-red-700" onClick={() => {
+                          setShowFilters(false) 
+                          setFilters(pendingFilters)
+                          setCurrentPage(1)
+                        }
+                        }>
                         Apply Filters
                       </Button>
                     </div>
@@ -389,26 +415,27 @@ export default function ProductsPage() {
             </div>
           </div>
         )}
+
         {/*flex-1 px-6 pb-6 overflow-y-auto*/}
         {/* Products grid */}
         <div className={`flex-1 overflow-y-auto ${isOverflowing ? "pl-6 pr-4" : "px-6"}`} ref={containerRef}>
           {loading ? (
-            <Loading />
+            <LoadingComp />
           ) : products.length > 0 ? (
             <div
               className={`grid grid-cols-1 md:grid-cols-2 ${
                 cardsPerRow === 3 ? "lg:grid-cols-3" : "lg:grid-cols-4"
               } gap-6`}
             >
-              {products.map((product, index) => (
+              {!isUpdateRows && (products.slice(0, productsPerPage).map((product, index) => (
                 <ProductCard key={index} {...product} />
-              ))}
+              )))}
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center h-full py-16">
               <div className="text-2xl font-bold text-zinc-500 mb-4">No products found</div>
               <div className="text-zinc-400 mb-8">Try adjusting your search or filter criteria</div>
-              {(searchQuery || hasActiveFilters) && (
+              {(
                 <div className="flex gap-4">
                   {searchQuery && (
                     <Button
@@ -422,7 +449,7 @@ export default function ProductsPage() {
                       Clear Search
                     </Button>
                   )}
-                  {hasActiveFilters && (
+                  {!showFilters && hasActiveFilters && (
                     <Button variant="outline" className="border-zinc-700 text-white" onClick={resetFilters}>
                       Clear Filters
                     </Button>
@@ -433,7 +460,7 @@ export default function ProductsPage() {
           )}
 
           {/* Pagination for overflow content */}
-          {products.length > 0 && isOverflowing && (
+          {!isUpdateItems && products.length > 0 && isOverflowing && (
             <Pagination
               currentPage={currentPage}
               totalPages={totalPages}
@@ -446,12 +473,17 @@ export default function ProductsPage() {
               showItemsPerPageDropdown={showItemsPerPageDropdown}
               setShowItemsPerPageDropdown={setShowItemsPerPageDropdown}
               getItemsPerPageOptions={getItemsPerPageOptions}
+              containerRef={containerRef}
+              isUpdateRows={isUpdateRows}
+              setisUpdateRows={setisUpdateRows}
+              isUpdateItems={isUpdateItems}
+              setisUpdateItems={setisUpdateItems}
             />
           )}
         </div>
 
         {/* Pagination for non-overflow content */}
-        {products.length > 0 && !isOverflowing && (
+        {!isUpdateItems && products.length > 0 && !isOverflowing && (
           <div className="px-6">
             <Pagination
               currentPage={currentPage}
@@ -465,6 +497,11 @@ export default function ProductsPage() {
               showItemsPerPageDropdown={showItemsPerPageDropdown}
               setShowItemsPerPageDropdown={setShowItemsPerPageDropdown}
               getItemsPerPageOptions={getItemsPerPageOptions}
+              containerRef={containerRef}
+              isUpdateRows={isUpdateRows}
+              setisUpdateRows={setisUpdateRows}
+              isUpdateItems={isUpdateItems}
+              setisUpdateItems={setisUpdateItems}
             />
           </div>
         )}
@@ -485,6 +522,11 @@ type PaginationProps = {
   showItemsPerPageDropdown: boolean
   setShowItemsPerPageDropdown: (val: boolean) => void
   getItemsPerPageOptions: () => number[]
+  containerRef: React.RefObject<HTMLDivElement | null>
+  isUpdateRows: boolean
+  setisUpdateRows: (val: boolean) => void
+  isUpdateItems: boolean
+  setisUpdateItems: (val: boolean) => void
 }
 
 export function Pagination({
@@ -499,6 +541,11 @@ export function Pagination({
   showItemsPerPageDropdown,
   setShowItemsPerPageDropdown,
   getItemsPerPageOptions,
+  containerRef,
+  isUpdateRows,
+  setisUpdateRows,
+  isUpdateItems,
+  setisUpdateItems,
 }: PaginationProps) {
   // Add a ref for the dropdown button and a useEffect for click outside
   const dropdownRef = useRef<HTMLDivElement>(null)
@@ -526,10 +573,15 @@ export function Pagination({
   const handleCardsPerRowChange = (newCardsPerRow: number) => {
     // Calculate current multiplier
     const currentMultiplier = Math.round(productsPerPage / cardsPerRow)
-
     // Set new products per page maintaining the same multiplier
     setProductsPerPage(newCardsPerRow * currentMultiplier)
     setCardsPerRow(newCardsPerRow)
+    if (newCardsPerRow != cardsPerRow)
+      setisUpdateRows(true)
+    containerRef.current?.scrollTo({
+      top: 0,
+      behavior: "auto"
+    })
   }
 
   return (
@@ -674,6 +726,10 @@ export function Pagination({
                     onClick={() => {
                       setProductsPerPage(option)
                       setShowItemsPerPageDropdown(false)
+                      if (option!=productsPerPage){
+                        setisUpdateItems(true)
+                        setisUpdateRows(true)
+                      }
                       paginate(1)
                     }}
                   >

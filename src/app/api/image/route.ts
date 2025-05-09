@@ -1,6 +1,6 @@
 import path from "path"
 import fs from "fs"
-import { NextRequest } from "next/server"
+import type { NextRequest } from "next/server"
 
 //prisma is safe
 // ใช้ BLOB ซะะะะะะะะ

@@ -5,6 +5,48 @@
 - เพิ่ม API สำหรับการดึง blob มาใช้งาน และปรับ api ตัวอย่าง Product และ products/slug
 - ยังไม่เสร็จ ขอไปพักก่อน
 
+##U need to install!!
+
+npm install @radix-ui/react-dropdown-menu
+
+##Some mySQL adjustment
+
+-- สร้างตาราง notifications
+CREATE TABLE notifications (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  category ENUM('system', 'order', 'review', 'stock') NOT NULL,
+  type ENUM(
+    'system_announcement', 'maintenance',
+    'order_placed', 'order_shipped', 'order_cancelled', 'order_delivered',
+    'new_review', 'review_reported',
+    'stock_low', 'stock_out'
+  ) NOT NULL,
+  title VARCHAR(255),
+  message TEXT,
+  link_url TEXT,
+  is_read BOOLEAN DEFAULT FALSE,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  expire_at DATETIME NULL,
+
+  CONSTRAINT fk_notifications_user
+    FOREIGN KEY (user_id) REFERENCES users(id)
+    ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+DELIMITER $$
+
+CREATE TRIGGER trg_notifications_expire
+BEFORE INSERT ON notifications
+FOR EACH ROW
+BEGIN
+  IF NEW.expire_at IS NULL THEN
+    SET NEW.expire_at = NOW() + INTERVAL 3 MONTH;
+  END IF;
+END$$
+
+DELIMITER ;
+
 ## วิธีติดตั้ง project
 Method 1
 

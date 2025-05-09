@@ -1,180 +1,167 @@
 "use client"
 
-import { useState } from "react"
-import Image from "next/image"
-import { ChevronDown, Info } from "lucide-react"
+import { useState, useEffect } from "react"
+import { Search, Plus, ExternalLink } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { useRouter } from "next/navigation"
+import { LoadingComp } from "@/components/loading-comp"
 
 interface Publisher {
   id: number
   name: string
-  logo: string
-}
-
-interface Complaint {
-  id: number
-  userId: string
-  issue: string
+  description?: string
+  servicesFee?: number
+  publisherWeb?: string
 }
 
 export default function PublishersPage() {
-  const [publishers] = useState<Publisher[]>([
-    { id: 1, name: "Hasbro", logo: "hasbro.png" },
-    { id: 2, name: "Geekify", logo: "geekify.png" },
-    { id: 3, name: "Inkarnate", logo: "inkarnate.png" },
-  ])
+  const router = useRouter()
+  const [searchQuery, setSearchQuery] = useState("")
+  const [publishers, setPublishers] = useState<Publisher[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  const [complaints] = useState<Complaint[]>([
-    { id: 1, userId: "User#19845", issue: "Missing Product" },
-    { id: 2, userId: "User#25786", issue: "Payment Failed" },
-    { id: 3, userId: "User#86123", issue: "Shipping Failed" },
-    { id: 4, userId: "User#34567", issue: "Missing Product" },
-    { id: 5, userId: "User#45624", issue: "Defective Product" },
-  ])
+  useEffect(() => {
+    fetchPublishers()
+  }, [])
+
+  const fetchPublishers = async () => {
+    setLoading(true)
+    setError(null)
+
+    try {
+      const response = await fetch("/api/publishers")
+
+      if (!response.ok) {
+        throw new Error(`Error fetching publishers: ${response.status}`)
+      }
+
+      const data = await response.json()
+      if (data.success) {
+        setPublishers(data.publishers)
+      } else {
+        throw new Error(data.message || "Failed to fetch publishers")
+      }
+    } catch (err) {
+      console.error("Error fetching publishers:", err)
+      setError(err instanceof Error ? err.message : "An unknown error occurred")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleAddPublisher = () => {
+    router.push("/SuperAdmins/publishers/add")
+  }
+
+  const filteredPublishers = publishers.filter((publisher) =>
+    publisher.name.toLowerCase().includes(searchQuery.toLowerCase()),
+  )
+
+  if (error) {
+    return (
+      <div className="pt-3 flex flex-col h-full overflow-hidden">
+        <div className="px-6 pb-6 flex items-center justify-center h-full">
+          <div className="text-center">
+            <h2 className="text-xl text-red-500 mb-4">Error loading publishers</h2>
+            <p className="text-zinc-400 mb-4">{error}</p>
+            <Button onClick={fetchPublishers}>Try Again</Button>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="pt-3 flex flex-col h-full overflow-hidden">
-      <div className="px-6 pb-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main content area */}
-        <div className="lg:col-span-2 p-[1px] bg-gradient-to-t from-magic-border-1 to-magic-border-2 rounded-[19px]">
-          <div className="p-[1px] bg-gradient-to-t from-magic-iron-1 from-20% to-magic-iron-2 to-80% rounded-[18px] overflow-hidden h-full">
-            <div className="flex items-center justify-center h-full">
-              <div className="text-2xl text-zinc-500">MOCK UP</div>
-            </div>
+      {/* Header with search and add button */}
+      <div className="px-6 pb-3 flex justify-between items-center">
+        <div className="w-full max-w-md">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
+            <Input
+              placeholder="Search publishers..."
+              className="pl-10 bg-zinc-900 border-zinc-800 text-white"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
           </div>
         </div>
 
-        {/* Requests sidebar */}
-        <div className="p-[1px] bg-gradient-to-t from-magic-border-1 to-magic-border-2 rounded-[19px]">
-          <div className="p-[1px] bg-gradient-to-t from-magic-iron-1 from-20% to-magic-iron-2 to-80% rounded-[18px] overflow-hidden">
-            <div className="p-4">
-              <h2 className="text-xl font-medium mb-4">Requests</h2>
-              <div className="space-y-4">
-                {publishers.map((publisher) => (
-                  <div key={publisher.id} className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-white rounded-md flex items-center justify-center">
-                        <Image
-                          src={`/api/image?path=publishers/${publisher.logo}`}
-                          alt={publisher.name}
-                          width={24}
-                          height={24}
-                          className="object-contain"
-                        />
-                      </div>
-                      <span>{publisher.name}</span>
-                    </div>
-                    <Button variant="ghost" size="sm" className="h-6 w-6 rounded-full p-0">
-                      <Info className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
+        <Button className="bg-red-600 hover:bg-red-700" onClick={handleAddPublisher}>
+          <Plus className="h-4 w-4 mr-2" />
+          Add Publisher
+        </Button>
+      </div>
 
-        {/* Total Complaints Chart */}
-        <div className="lg:col-span-2 p-[1px] bg-gradient-to-t from-magic-border-1 to-magic-border-2 rounded-[19px]">
-          <div className="p-[1px] bg-gradient-to-t from-magic-iron-1 from-20% to-magic-iron-2 to-80% rounded-[18px] overflow-hidden">
-            <div className="p-4">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-medium">Total Complaints</h2>
-                <Button variant="outline" className="border-zinc-700 text-white h-8">
-                  month <ChevronDown className="ml-2 h-4 w-4" />
-                </Button>
-              </div>
-              <ComplaintsChart />
-            </div>
+      {/* Publishers grid */}
+      <div className="flex-1 px-6 pb-6 overflow-y-auto">
+        {loading ? (
+          <div className="flex items-center justify-center h-full">
+            <LoadingComp />
           </div>
-        </div>
-
-        {/* Complaints Reports */}
-        <div className="p-[1px] bg-gradient-to-t from-magic-border-1 to-magic-border-2 rounded-[19px]">
-          <div className="p-[1px] bg-gradient-to-t from-magic-iron-1 from-20% to-magic-iron-2 to-80% rounded-[18px] overflow-hidden">
-            <div className="p-4">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-medium">Complaints Reports</h2>
-                <div className="text-xs text-zinc-400">Complaints</div>
-              </div>
-              <div className="space-y-4">
-                {complaints.map((complaint) => (
-                  <div key={complaint.id} className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-6 h-6 rounded-full bg-zinc-800 flex items-center justify-center">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          width="24"
-                          height="24"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          className="h-3 w-3"
-                        >
-                          <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
-                          <circle cx="12" cy="7" r="4" />
-                        </svg>
-                      </div>
-                      <span>{complaint.userId}</span>
-                    </div>
-                    <span className="text-sm">{complaint.issue}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
+        ) : filteredPublishers.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full">
+            <h2 className="text-xl mb-4">No publishers found</h2>
+            <p className="text-zinc-400 mb-6">
+              {searchQuery ? "Try adjusting your search" : "Add your first publisher to get started"}
+            </p>
+            <Button className="bg-red-600 hover:bg-red-700" onClick={handleAddPublisher}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add New Publisher
+            </Button>
           </div>
-        </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredPublishers.map((publisher) => (
+              <PublisherCard key={publisher.id} publisher={publisher} />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   )
 }
 
-function ComplaintsChart() {
+function PublisherCard({ publisher }: { publisher: Publisher }) {
   return (
-    <div className="h-48 relative">
-      <div className="absolute left-0 top-0 h-full flex flex-col justify-between text-xs text-zinc-500">
-        <div>400</div>
-        <div>300</div>
-        <div>200</div>
-        <div>100</div>
-        <div>0</div>
-      </div>
-      <div className="absolute bottom-0 left-10 right-0 flex justify-between text-xs text-zinc-500">
-        <div>Jan</div>
-        <div>Feb</div>
-        <div>Mar</div>
-        <div>Apr</div>
-        <div>May</div>
-        <div>Jul</div>
-        <div>Jun</div>
-        <div>Aug</div>
-        <div>Sep</div>
-        <div>Oct</div>
-        <div>Nov</div>
-        <div>Dec</div>
-      </div>
-      <div className="absolute left-10 top-0 right-0 bottom-5">
-        <svg className="w-full h-full" viewBox="0 0 800 200" preserveAspectRatio="none">
-          <defs>
-            <linearGradient id="complaintsGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#e8443c" stopOpacity="0.3" />
-              <stop offset="100%" stopColor="#e8443c" stopOpacity="0" />
-            </linearGradient>
-          </defs>
-          <path
-            d="M0,180 C50,170 100,160 150,150 C200,140 250,130 300,80 C350,30 400,120 450,140 C500,160 550,100 600,120 C650,140 700,100 750,80 L800,100 L800,200 L0,200 Z"
-            fill="url(#complaintsGradient)"
-          />
-          <path
-            d="M0,180 C50,170 100,160 150,150 C200,140 250,130 300,80 C350,30 400,120 450,140 C500,160 550,100 600,120 C650,140 700,100 750,80 L800,100"
-            fill="none"
-            stroke="#e8443c"
-            strokeWidth="2"
-          />
-        </svg>
+    <div className="p-[1px] bg-gradient-to-t from-magic-border-1 to-magic-border-2 rounded-[19px]">
+      <div className="p-[1px] bg-gradient-to-t from-magic-iron-1 from-20% to-magic-iron-2 to-80% rounded-[18px] overflow-hidden">
+        <div className="p-6">
+          <div className="flex items-center gap-4 mb-4">
+            <div className="w-16 h-16 bg-zinc-800 rounded-full flex items-center justify-center overflow-hidden">
+              {/* Publisher logo would go here */}
+              <span className="text-2xl font-bold">{publisher.name.charAt(0)}</span>
+            </div>
+            <div>
+              <h3 className="text-xl font-bold">{publisher.name}</h3>
+              {publisher.servicesFee !== undefined && (
+                <p className="text-sm text-zinc-400">Fee: {publisher.servicesFee}%</p>
+              )}
+            </div>
+          </div>
+
+          {publisher.description && <p className="text-sm text-zinc-300 mb-4 line-clamp-3">{publisher.description}</p>}
+
+          {publisher.publisherWeb && (
+            <a
+              href={publisher.publisherWeb}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center text-sm text-zinc-400 hover:text-white transition-colors"
+            >
+              <ExternalLink className="h-3 w-3 mr-1" />
+              Website
+            </a>
+          )}
+
+          <div className="mt-4 flex justify-end">
+            <Button variant="outline" size="sm" className="border-zinc-700">
+              View Details
+            </Button>
+          </div>
+        </div>
       </div>
     </div>
   )

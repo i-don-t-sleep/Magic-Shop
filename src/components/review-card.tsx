@@ -48,7 +48,14 @@ export function ReviewCard({
     <div className="bg-gradient-to-b from-[#222222] to-[#1D1D1D] rounded-lg overflow-hidden">
       <div className="p-6 grid grid-cols-1 md:grid-cols-[200px_1fr_200px] gap-6">
         <div className="flex justify-center">
-          <Image src={`/api/image?path=products/${imageUrl}`} alt={title} width={1000} height={1000} className="object-contain" /> {/*Still not feasible*/}
+          <Image
+            src={`/api/image?path=products/${imageUrl}`}
+            alt={title}
+            width={1000}
+            height={1000}
+            className="object-contain"
+          />{" "}
+          {/*Still not feasible*/}
         </div>
 
         <div>

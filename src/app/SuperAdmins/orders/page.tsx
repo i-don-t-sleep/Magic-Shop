@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Filter, Search, Settings, ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { OrderStatus, Order, OrderCard } from "@/components/order-card"
+import { type Order, OrderCard } from "@/components/order-card"
 
 export default function OrdersPage() {
   const [searchQuery, setSearchQuery] = useState("")
@@ -72,7 +72,7 @@ export default function OrdersPage() {
       order.client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       order.client.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
       order.client.country.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      order.status.toLowerCase().includes(searchQuery.toLowerCase())
+      order.status.toLowerCase().includes(searchQuery.toLowerCase()),
   )
 
   const totalPages = Math.ceil(filteredOrders.length / ordersPerPage)

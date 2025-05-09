@@ -5,7 +5,7 @@ import Image from "next/image"
 import { useParams, useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Loading } from "@/components/loading-comp"
+import { LoadingComp } from "@/components/loading-comp"
 
 interface ProductData {
   name: string
@@ -32,7 +32,7 @@ export default function ProductDetail() {
     setError(null)
 
     fetch(`/api/products/${slug}`)
-      .then(res => {
+      .then((res) => {
         if (res.status === 404) {
           // กรณี API คืน 404
           setNotFound(true)
@@ -41,12 +41,12 @@ export default function ProductDetail() {
         if (!res.ok) throw new Error(`Status ${res.status}\n ${JSON.stringify(res)} slug:${slug}`)
         return res.json() as Promise<ProductData>
       })
-      .then(data => {
+      .then((data) => {
         if (data) {
           setProduct(data)
         }
       })
-      .catch(err => {
+      .catch((err) => {
         console.error("Fetch error:", err)
         setError(err.message)
       })
@@ -57,7 +57,7 @@ export default function ProductDetail() {
 
   // 3) แสดงผลตามสถานะ
   if (loading) {
-    return <Loading></Loading>
+    return <LoadingComp></LoadingComp>
   }
   if (notFound) {
     return (
@@ -73,19 +73,11 @@ export default function ProductDetail() {
   }
 
   if (error) {
-    return (
-      <div className="p-4 text-red-500">
-        Error: {error}
-      </div>
-    )
+    return <div className="p-4 text-red-500">Error: {error}</div>
   }
 
   if (!product) {
-    return (
-      <div className="p-4 text-red-500">
-        Error load data.
-      </div>
-    )
+    return <div className="p-4 text-red-500">Error load data.</div>
   }
 
   const isOutOfStock = product.inventory === 0
@@ -121,19 +113,9 @@ export default function ProductDetail() {
             <div className="flex items-center gap-4 mb-6">
               <span className="text-2xl font-bold">{product.price}</span>
               <div className="flex items-center gap-2">
-                <Package
-                  className={`h-5 w-5 ${
-                    isOutOfStock ? "text-red-500" : "text-green-500"
-                  }`}
-                />
-                <span
-                  className={`${
-                    isOutOfStock ? "text-red-500" : "text-green-500"
-                  }`}
-                >
-                  {isOutOfStock
-                    ? "Out of stock"
-                    : `${product.inventory} in stock`}
+                <Package className={`h-5 w-5 ${isOutOfStock ? "text-red-500" : "text-green-500"}`} />
+                <span className={`${isOutOfStock ? "text-red-500" : "text-green-500"}`}>
+                  {isOutOfStock ? "Out of stock" : `${product.inventory} in stock`}
                 </span>
               </div>
             </div>

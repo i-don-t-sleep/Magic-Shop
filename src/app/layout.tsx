@@ -1,18 +1,19 @@
 import type React from "react"
 import type { Metadata } from "next"
 import "@/app/globals.css"
-import { Poppins } from 'next/font/google'
-import { Toaster } from 'react-hot-toast' //npm install react-hot-toast
+import { Poppins } from "next/font/google"
+import { Toaster } from "react-hot-toast" //npm install react-hot-toast
 
 const poppins = Poppins({
-  subsets: ['latin'],
-  weight: ['400', '500', '700'],
-  variable: '--font-poppins',
+  subsets: ["latin"],
+  weight: ["400", "500", "700"],
+  variable: "--font-poppins",
 })
 
 export const metadata: Metadata = {
   title: "Magic Shop",
   description: "Shop for DnD lovers by DnD lovers",
+    generator: 'v0.dev'
 }
 
 export default function RootLayout({
@@ -27,7 +28,7 @@ export default function RootLayout({
         <Toaster
           position="top-right"
           toastOptions={{
-            className: 'normal_toast',
+            className: "normal_toast",
             duration: 3000,
           }}
         />
@@ -35,4 +36,3 @@ export default function RootLayout({
     </html>
   )
 }
-

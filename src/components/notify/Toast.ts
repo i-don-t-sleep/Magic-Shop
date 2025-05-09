@@ -1,7 +1,6 @@
-'use client'
+"use client"
 
-import toast from 'react-hot-toast'
-import { motion } from 'framer-motion' //npm install framer-motion
+import toast from "react-hot-toast"
 
 const MAX_TOAST = 1
 const toastQueue: string[] = []
