@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { showSuccessToast, showErrorToast, showLoadingToast } from "@/components/notify/Toast"
 import Image from "next/image"
-import { Loading } from "@/components/loading-comp"
+import { LoadingComp } from "@/components/loading-comp"
 
 interface Publisher {
   id: number
@@ -199,7 +199,7 @@ export default function EditProductPage() {
   }
 
   if (isLoading) {
-    return <Loading />
+    return <LoadingComp />
   }
 
   if (error) {

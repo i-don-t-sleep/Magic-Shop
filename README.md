@@ -9,6 +9,30 @@
 
 npm install @radix-ui/react-dropdown-menu
 
+npm install @radix-ui/react-dialog
+
+npm install @radix-ui/react-popover
+
+npm install cmdk
+
+npm install date-fns
+
+npm install @radix-ui/react-alert-dialog 
+
+npm install @radix-ui/react-slider 
+
+npm install react-hook-form
+
+npm install @radix-ui/react-label
+
+npm install @radix-ui/react-select
+
+npm install @headlessui/react
+
+npm install @heroicons/react
+
+npm i @radix-ui/react-scroll-area
+
 ##Some mySQL adjustment
 
 -- สร้างตาราง notifications

@@ -1,28 +1,49 @@
 "use client"
 
+import type React from "react"
+
 import { useState, useRef, useEffect } from "react"
-import { ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Filter, Plus, Search, X } from "lucide-react"
+import { ChevronDown, ChevronLeft, ChevronRight, Plus, SlidersHorizontal } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ProductCard } from "@/components/product-card"
 import { LoadingComp } from "@/components/loading-comp"
 import Link from "next/link"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { Slider } from "@/components/ui/slider"
+import { cn } from "@/lib/utils"
+import SuggestSearchSpan, { type ComboboxItem } from "@/components/newcomp/SuggestSearchSpan"
+import { Histogram } from "@/components/ui/histogram"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { UnifiedTagInput, type FilterOption, type FilterTag } from "@/components/ui/uniified-tag-input"
+import { Spinbox } from "@/components/ui/spinbox"
 
 type Product = {
   name: string
   price: string
   quantity: number
-  imageUrl: string
+  primaryImage: string
   href: string
 }
 
 type FilterState = {
-  category: string
-  publisher: string
+  categories: string[]
+  publishers: string[]
   minPrice: string
   maxPrice: string
-  status: string
+  minQuantity: string
+  maxQuantity: string
+  statuses: string[]
   sort: string
+}
+
+type HistogramData = {
+  bins: number[]
+  counts: number[]
+  min: number
+  max: number
+  average: number
 }
 
 export default function ProductsPage() {
@@ -43,6 +64,20 @@ export default function ProductsPage() {
   const [categoryEnum, setCategoryEnum] = useState<string[]>([])
   const [statusEnum, setStatusEnum] = useState<string[]>([])
   const [publisherNames, setPublisherNames] = useState<string[]>([])
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000])
+  const [quantityRange, setQuantityRange] = useState<[number, number]>([0, 100])
+  const [maxPriceValue, setMaxPriceValue] = useState(1000)
+  const [maxQuantityValue, setMaxQuantityValue] = useState(100)
+
+  // Histogram data
+  const [priceHistogram, setPriceHistogram] = useState<HistogramData | null>(null)
+  const [quantityHistogram, setQuantityHistogram] = useState<HistogramData | null>(null)
+  const [loadingHistograms, setLoadingHistograms] = useState(false)
+
+  // Filter tags
+  const [filterTags, setFilterTags] = useState<FilterTag[]>([])
+  const [pendingFilterTags, setPendingFilterTags] = useState<FilterTag[]>([])
+
 
   const fetchMetadata = async () => {
     const res = await fetch("/api/products/meta")
@@ -51,49 +86,180 @@ export default function ProductsPage() {
       setCategoryEnum(data.categoryEnum)
       setStatusEnum(data.statusEnum)
       setPublisherNames(data.publishers)
+
+      // Get max price and quantity for sliders
+      if (data.maxPrice) setMaxPriceValue(data.maxPrice)
+      if (data.maxQuantity) setMaxQuantityValue(data.maxQuantity)
+
+      // Initialize ranges
+      setPriceRange([0, data.maxPrice || 1000])
+      setQuantityRange([0, data.maxQuantity || 100])
     } else {
       console.error("Failed to fetch metadata")
     }
   }
-  
-  
+
+  const fetchHistograms = async () => {
+    setLoadingHistograms(true)
+    const bins = 90
+    try {
+      // Fetch price histogram
+      const priceRes = await fetch(`/api/products/histogram?field=price&bins=${bins}`)
+      const priceData = await priceRes.json()
+
+      if (priceData.success) {
+        setPriceHistogram(priceData.histogram)
+        // Update price range with actual min/max from data
+        setPriceRange([priceData.histogram.min, priceData.histogram.max])
+      }
+
+      // Fetch quantity histogram
+      const quantityRes = await fetch(`/api/products/histogram?field=quantity&bins=${bins}`)
+      const quantityData = await quantityRes.json()
+
+      if (quantityData.success) {
+        setQuantityHistogram(quantityData.histogram)
+        // Update quantity range with actual min/max from data
+        setQuantityRange([quantityData.histogram.min, quantityData.histogram.max])
+      }
+    } catch (error) {
+      console.error("Error fetching histograms:", error)
+    } finally {
+      setLoadingHistograms(false)
+    }
+  }
+
+  // after add product, update product
   useEffect(() => {
     fetchMetadata()
+    fetchHistograms()
   }, [])
-
-  // Add this right after the showFilters state declaration:
-  // Ref for the filter dialog
-  const filterDialogRef = useRef<HTMLDivElement>(null)
-
-  // Handle click outside to close filter dialog
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (showFilters && filterDialogRef.current && !filterDialogRef.current.contains(event.target as Node)) {
-        setShowFilters(false)
-      }
-    }
-
-    // Add event listener when filter dialog is open
-    if (showFilters) {
-      document.addEventListener("mousedown", handleClickOutside)
-    }
-
-    // Clean up
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside)
-    }
-  }, [showFilters])
 
   // Filter state
   const [filters, setFilters] = useState<FilterState>({
-    category: "",
-    publisher: "",
+    categories: [],
+    publishers: [],
     minPrice: "",
     maxPrice: "",
-    status: "",
+    minQuantity: "",
+    maxQuantity: "",
+    statuses: [],
     sort: "price-asc",
   })
   const [pendingFilters, setPendingFilters] = useState<FilterState>(filters)
+
+
+  // Convert filter tags to filter state
+  const updateFiltersFromTags = (tags: FilterTag[]) => {
+    const newFilters: FilterState = {
+      categories: [],
+      publishers: [],
+      minPrice: "",
+      maxPrice: "",
+      minQuantity: "",
+      maxQuantity: "",
+      statuses: [],
+      sort: "price-asc",
+    }
+
+    tags.forEach((tag) => {
+      switch (tag.type) {
+        case "category":
+          newFilters.categories.push(tag.value)
+          break
+        case "publisher":
+          newFilters.publishers.push(tag.value)
+          break
+        case "status":
+          newFilters.statuses.push(tag.value)
+          break
+        case "sort":
+          newFilters.sort = tag.value
+          break
+        case "price-min":
+          newFilters.minPrice = tag.value
+          break
+        case "price-max":
+          newFilters.maxPrice = tag.value
+          break
+        case "quantity-min":
+          newFilters.minQuantity = tag.value
+          break
+        case "quantity-max":
+          newFilters.maxQuantity = tag.value
+          break
+      }
+    })
+
+    return newFilters
+  }
+
+  // Update filter tags when price/quantity ranges change
+  useEffect(() => {
+    if (showFilters) {
+      // Remove existing price tags
+      const tagsWithoutPrice = pendingFilterTags.filter((tag) => tag.type !== "price-min" && tag.type !== "price-max")
+
+      // Add new price tags if values are set
+      const newTags = [...tagsWithoutPrice]
+
+      if (priceRange[0] > (priceHistogram?.min || 0)) {
+        newTags.push({
+          type: "price-min",
+          typeLabel: "Min Price",
+          value: priceRange[0].toString(),
+          label: `$${priceRange[0]}`,
+        })
+      }
+
+      if (priceRange[1] < (priceHistogram?.max || maxPriceValue)) {
+        newTags.push({
+          type: "price-max",
+          typeLabel: "Max Price",
+          value: priceRange[1].toString(),
+          label: `$${priceRange[1]}`,
+        })
+      }
+
+      setPendingFilterTags(newTags)
+      setPendingFilters(updateFiltersFromTags(newTags))
+    }
+  }, [priceRange, priceHistogram])
+
+  // Update filter tags when quantity ranges change
+  useEffect(() => {
+    if (showFilters) {
+      // Remove existing quantity tags
+      const tagsWithoutQuantity = pendingFilterTags.filter(
+        (tag) => tag.type !== "quantity-min" && tag.type !== "quantity-max",
+      )
+
+      // Add new quantity tags if values are set
+      const newTags = [...tagsWithoutQuantity]
+
+      if (quantityRange[0] > (quantityHistogram?.min || 0)) {
+        newTags.push({
+          type: "quantity-min",
+          typeLabel: "Min Quantity",
+          value: quantityRange[0].toString(),
+          label: quantityRange[0].toString(),
+        })
+      }
+
+      if (quantityRange[1] < (quantityHistogram?.max || maxQuantityValue)) {
+        newTags.push({
+          type: "quantity-max",
+          typeLabel: "Max Quantity",
+          value: quantityRange[1].toString(),
+          label: quantityRange[1].toString(),
+        })
+      }
+
+      setPendingFilterTags(newTags)
+      setPendingFilters(updateFiltersFromTags(newTags))
+    }
+  }, [quantityRange, quantityHistogram])
+
   // Calculate total pages
   const totalPages = Math.ceil(totalRecords / productsPerPage)
 
@@ -102,7 +268,7 @@ export default function ProductsPage() {
     setCurrentPage(pageNumber)
     containerRef.current?.scrollTo({
       top: 0,
-      behavior: "auto"
+      behavior: "auto",
     })
   }
 
@@ -113,22 +279,28 @@ export default function ProductsPage() {
     return multipliers.map((multiplier) => baseMultiple * multiplier)
   }
 
-  // Handle filter change
-  const handleFilterChange = (key: keyof FilterState, value: string) => {
-    setFilters((prev) => ({ ...prev, [key]: value }))
-    setCurrentPage(1) // Reset to first page when filter changes
-  }
-
   // Reset filters
   const resetFilters = () => {
+    setPendingFilterTags([])
     setPendingFilters({
-      category: "",
-      publisher: "",
+      categories: [],
+      publishers: [],
       minPrice: "",
       maxPrice: "",
-      status: "",
+      minQuantity: "",
+      maxQuantity: "",
+      statuses: [],
       sort: "price-asc",
     })
+
+    // Reset ranges to histogram min/max
+    if (priceHistogram) {
+      setPriceRange([priceHistogram.min, priceHistogram.max])
+    }
+
+    if (quantityHistogram) {
+      setQuantityRange([quantityHistogram.min, quantityHistogram.max])
+    }
   }
 
   // Fetch products from API
@@ -149,12 +321,16 @@ export default function ProductsPage() {
       }
 
       // Add filters to query params
-      if (filters.category) {
-        queryParams.append("category", filters.category)
+      if (filters.categories.length > 0) {
+        filters.categories.forEach((category) => {
+          queryParams.append("category", category)
+        })
       }
 
-      if (filters.publisher) {
-        queryParams.append("publisher", filters.publisher)
+      if (filters.publishers.length > 0) {
+        filters.publishers.forEach((publisher) => {
+          queryParams.append("publisher", publisher)
+        })
       }
 
       if (filters.minPrice) {
@@ -165,8 +341,18 @@ export default function ProductsPage() {
         queryParams.append("maxPrice", filters.maxPrice)
       }
 
-      if (filters.status) {
-        queryParams.append("status", filters.status)
+      if (filters.minQuantity) {
+        queryParams.append("minQuantity", filters.minQuantity)
+      }
+
+      if (filters.maxQuantity) {
+        queryParams.append("maxQuantity", filters.maxQuantity)
+      }
+
+      if (filters.statuses.length > 0) {
+        filters.statuses.forEach((status) => {
+          queryParams.append("status", status)
+        })
       }
 
       const response = await fetch(`/api/products?${queryParams.toString()}`)
@@ -202,8 +388,7 @@ export default function ProductsPage() {
 
   // Fetch products when page, productsPerPage, search, or filters change
   useEffect(() => {
-    if (!showFilters)
-      fetchProducts()
+    if (!showFilters) fetchProducts()
   }, [currentPage, productsPerPage, searchQuery, filters, showFilters])
 
   // Update productsPerPage when cardsPerRow changes
@@ -230,13 +415,92 @@ export default function ProductsPage() {
   }
 
   // Check if any filters are active
-  const hasActiveFilters =
-    filters.category ||
-    filters.publisher ||
-    filters.minPrice ||
-    filters.maxPrice ||
-    filters.status ||
-    filters.sort !== "price-asc"
+  const hasActiveFilters = filterTags.length > 0
+
+  // Sort options
+  const sortOptions = [
+    { value: "price-asc", label: "Price: Low to High" },
+    { value: "price-desc", label: "Price: High to Low" },
+    { value: "quantity-asc", label: "Quantity: Low to High" },
+    { value: "quantity-desc", label: "Quantity: High to Low" },
+    { value: "id-desc", label: "Newest First" },
+    { value: "id-asc", label: "Oldest First" },
+  ]
+
+  // Create filter options for the unified tag input
+  const filterOptions: FilterOption[] = [
+    // Category options
+    ...categoryEnum.map((category) => ({
+      type: "category",
+      typeLabel: "Category",
+      value: category,
+      label: category,
+    })),
+
+    // Publisher options
+    ...publisherNames.map((publisher) => ({
+      type: "publisher",
+      typeLabel: "Publisher",
+      value: publisher,
+      label: publisher,
+    })),
+
+    // Status options
+    ...statusEnum.map((status) => ({
+      type: "status",
+      typeLabel: "Status",
+      value: status,
+      label: status,
+    })),
+
+    // Sort options
+    ...sortOptions.map((option) => ({
+      type: "sort",
+      typeLabel: "Sort By",
+      value: option.value,
+      label: option.label,
+    })),
+  ]
+
+  // Handle adding a tag
+  const handleAddTag = (tag: FilterTag) => {
+    // For sort type, remove any existing sort tags first
+    let newTags = [...pendingFilterTags]
+
+    if (tag.type === "sort") {
+      newTags = newTags.filter((t) => t.type !== "sort")
+    }
+
+    // Add the new tag
+    newTags.push(tag)
+
+    // Update pending filters
+    setPendingFilterTags(newTags)
+    setPendingFilters(updateFiltersFromTags(newTags))
+  }
+
+  // Handle removing a tag
+  const handleRemoveTag = (tag: FilterTag) => {
+    const newTags = pendingFilterTags.filter((t) => !(t.type === tag.type && t.value === tag.value))
+
+    setPendingFilterTags(newTags)
+    setPendingFilters(updateFiltersFromTags(newTags))
+
+    // Reset price/quantity ranges if those tags are removed
+    if (tag.type === "price-min" || tag.type === "price-max") {
+      setPriceRange([
+        tag.type === "price-min" ? priceHistogram?.min || 0 : priceRange[0],
+        tag.type === "price-max" ? priceHistogram?.max || maxPriceValue : priceRange[1],
+      ])
+    }
+
+    if (tag.type === "quantity-min" || tag.type === "quantity-max") {
+      setQuantityRange([
+        tag.type === "quantity-min" ? quantityHistogram?.min || 0 : quantityRange[0],
+        tag.type === "quantity-max" ? quantityHistogram?.max || maxQuantityValue : quantityRange[1],
+      ])
+    }
+  }
 
   // Add this right before the return statement in ProductsPage
   return (
@@ -245,178 +509,280 @@ export default function ProductsPage() {
         {/* Header with search and filters */}
         <div className="px-6 pb-3 flex justify-between items-center">
           <div className="w-full max-w-md">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
-              <Input
-                placeholder="Search products..."
-                className="pl-10 bg-zinc-900 border-zinc-800 text-white"
-                value={searchQuery}
-                onChange={(e) => {
-                  setSearchQuery(e.target.value)
-                  setCurrentPage(1) // Reset to first page on search
-                }}
-              />
-            </div>
+            <SuggestSearchSpan<ComboboxItem>
+              items={products}
+              value={searchQuery}
+              setValue={setSearchQuery}
+              placeholder="Search products..."
+              className="z-10"
+              maxVisible={1}
+              enableSuggest={true}
+            />
           </div>
           <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  className={`border-zinc-700 text-white ${hasActiveFilters ? "bg-magic-red" : ""}`}
-                  onClick={() => {
-                    setShowFilters(!showFilters)
-                    setPendingFilters(filters)  // copy ค่าเดิมมาแสดงใน dialog
-                  }}
-                >
-                  <Filter className="h-4 w-4 mr-2" />
-                  Filter
-                  {hasActiveFilters && (
-                    <span className="ml-2 bg-white text-black rounded-full w-5 h-5 flex items-center justify-center text-xs">
-                      {Object.values(filters).filter((v) => v && v !== "price-asc").length}
-                    </span>
-                  )}
-                  <ChevronDown className="h-4 w-4 ml-2" />
-                </Button>
-                <Link href="/SuperAdmins/products/add">
-                  <Button variant="outline" className="border-zinc-700 text-white" >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add
-                  </Button>
-                </Link>
+            <Button
+              variant="outline"
+              className={`border-zinc-700 text-white ${hasActiveFilters ? "bg-magic-red" : ""}`}
+              onClick={() => {
+                setShowFilters(true)
+                setPendingFilterTags(filterTags)
+                setPriceRange([
+                  filters.minPrice ? Number.parseInt(filters.minPrice) : priceHistogram?.min || 0,
+                  filters.maxPrice ? Number.parseInt(filters.maxPrice) : priceHistogram?.max || maxPriceValue,
+                ])
+                setQuantityRange([
+                  filters.minQuantity ? Number.parseInt(filters.minQuantity) : quantityHistogram?.min || 0,
+                  filters.maxQuantity
+                    ? Number.parseInt(filters.maxQuantity)
+                    : quantityHistogram?.max || maxQuantityValue,
+                ])
+              }}
+            >
+              <SlidersHorizontal className="h-4 w-4 mr-2" />
+              Filter
+              {hasActiveFilters && (
+                <span className="ml-2 bg-white text-black rounded-full w-5 h-5 flex items-center justify-center text-xs">
+                  {filterTags.length}
+                </span>
+              )}
+            </Button>
+            <Link href="/SuperAdmins/products/add-movement">
+              <Button variant="outline" className="border-zinc-700 text-white">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Product
+              </Button>
+            </Link>
           </div>
         </div>
-        
-        {/* Filter panel */}
-        {showFilters && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center">
-            {/* Semi-transparent overlay */}
-            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
 
-            {/* Filter dialog relative z-10 w-full max-w-3xl mx-auto*/}
-            <div className="relative z-10 w-full max-w-3xl mx-auto" ref={filterDialogRef}>
-              <div className="p-[1px] bg-gradient-to-t from-magic-border-1 to-magic-border-2 rounded-[19px]">
-                <div className="p-[1px] bg-gradient-to-t from-magic-iron-1 from-20% to-magic-iron-2 to-80% rounded-[18px] overflow-hidden">
-                  <div className="p-6">
-                    <div className="flex justify-between items-center mb-4">
-                      <h3 className="text-xl font-medium">Filter Products</h3>
-                      <Button variant="ghost" size="sm" onClick={() => setShowFilters(false)}>
-                        <X className="h-5 w-5" />
-                      </Button>
+        {/* Filter Dialog */}
+        <Dialog open={showFilters} onOpenChange={setShowFilters}>
+          <DialogContent className="sm:max-w-[500px] bg-gradient-to-t from-magic-iron-1 from-50% to-magic-iron-2 to-100% border-zinc-700 p-0 overflow-hidden">  
+            <DialogHeader className="max-h-[20vh] pt-4 flex items-center justify-center bg-gradient-to-t from-magic-iron-1 from-20% to-magic-iron-2 to-80% border-zinc-700">
+              <DialogTitle className="flex text-2xl font-semibold text-white"> <SlidersHorizontal className="h-7 w-7 mr-2 text-white" /> Filter Products</DialogTitle>
+              <div className="w-full h-px bg-zinc-700" />
+            </DialogHeader>
+            <div className="max-h-[60vh] overflow-auto">
+              <div className="pt-6 pb-6 px-6">
+                <div className="space-y-6">
+                  {/* Unified Tag Input */}
+                  <div className="space-y-2">
+                  <h3 className="text-xl font-medium text-white">Filters</h3>
+                    <UnifiedTagInput
+                      options={filterOptions}
+                      selectedTags={pendingFilterTags.filter(
+                        (tag) =>
+                          tag.type !== "price-min" &&
+                          tag.type !== "price-max" &&
+                          tag.type !== "quantity-min" &&
+                          tag.type !== "quantity-max",
+                      )}
+                      onTagSelect={handleAddTag}
+                      onTagRemove={handleRemoveTag}
+                      placeholder="Add filters..."
+                      maxHeight="200px"
+                    />
+                  </div>
+
+                  {/* Price Range */}
+                  <div className="space-y-4">
+                    <div>
+                      <h3 className="text-xl font-medium text-white">Price Range</h3>
+                      <p className="text-zinc-400 text-sm">
+                        The average price is {priceHistogram && (priceHistogram.average)}
+                      </p>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      {/* Category filter */}
-                      <div>
-                        <label className="block text-sm font-medium mb-2">Category</label>
-                        <select
-                          className="w-full p-2 rounded bg-zinc-900 border border-zinc-700 text-white"
-                          value={pendingFilters.category}
-                          onChange={(e) => setPendingFilters(prev => ({ ...prev, category: e.target.value }))}
-                        >
-                          <option value="">All Categories</option>
-                          {categoryEnum.map((category) => (
-                            <option key={category} value={category}>
-                              {category}
-                            </option>
-                          ))}
-                        </select>
+                    {/* Price Histogram */}
+                    {loadingHistograms ? (
+                      <div className="h-20 flex items-center justify-center">
+                        <div className="animate-pulse bg-zinc-700 h-16 w-full rounded"></div>
                       </div>
+                    ) : priceHistogram ? (
+                      <Histogram
+                        data={priceHistogram.counts}
+                        bins={priceHistogram.bins}
+                        min={priceHistogram.min}
+                        max={priceHistogram.max}
+                        selectedRange={priceRange}
+                        colorStart="#7f1d1d"
+                        colorEnd="#ef4444"
+                      />
+                    ) : (
+                      <div className="h-20 flex items-center justify-center text-zinc-400">No price data available</div>
+                    )}
 
-                      {/* Publisher filter */}
-                      <div>
-                        <label className="block text-sm font-medium mb-2">Publisher</label>
-                        <select
-                          className="w-full p-2 rounded bg-zinc-900 border border-zinc-700 text-white"
-                          value={pendingFilters.publisher}
-                          onChange={(e) => setPendingFilters(prev => ({ ...prev, publisher: e.target.value }))}
-                        >
-                          <option value="">All Publishers</option>
-                          {publisherNames.map((publisher) => (
-                            <option key={publisher} value={publisher}>
-                              {publisher}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
+                    <Slider
+                      value={priceRange}
+                      min={priceHistogram?.min || 0}
+                      max={priceHistogram?.max || maxPriceValue}
+                      step={1}
+                      onValueChange={(value) => {
+                        setPriceRange(value as [number, number])
+                        setPendingFilters((prev) => ({
+                          ...prev,
+                          minPrice: value[0].toString(),
+                          maxPrice: value[1].toString(),
+                        }))
+                      }}
+                      className="my-4"
+                    />
 
-                      {/* Status filter */}
+                    <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium mb-2">Status</label>
-                        <select
-                          className="w-full p-2 rounded bg-zinc-900 border border-zinc-700 text-white"
-                          value={pendingFilters.status}
-                          onChange={(e) => setPendingFilters(prev => ({ ...prev, status: e.target.value }))}
-                        >
-                          <option value="">All Status</option>
-                          {statusEnum.map((status) => (
-                            <option key={status} value={status}>
-                              {status}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-
-                      {/* Price range */}
-                      <div>
-                        <label className="block text-sm font-medium mb-2">Min Price</label>
-                        <Input
-                          type="number"
-                          placeholder="Min Price"
-                          className="bg-zinc-900 border-zinc-700 text-white"
-                          value={pendingFilters.minPrice}
-                          onChange={(e) => setPendingFilters(prev => ({ ...prev, minPrice: e.target.value }))}
+                        <label className="text-sm text-zinc-400 mb-1 block">Min Price</label>
+                        <Spinbox
+                          value={priceRange[0]}
+                          min={priceHistogram?.min || 0}
+                          max={priceHistogram?.max || maxPriceValue}
+                          step={1}
+                          onChange={(e) => {
+                            const value = Number(e.toFixed(2))
+                            setPriceRange([value, priceRange[1]])
+                            setPendingFilters((prev) => ({
+                              ...prev,
+                              minPrice: value.toString(),
+                            }))
+                          }}
                         />
                       </div>
-
-                      <div>
-                        <label className="block text-sm font-medium mb-2">Max Price</label>
-                        <Input
-                          type="number"
-                          placeholder="Max Price"
-                          className="bg-zinc-900 border-zinc-700 text-white"
-                          value={pendingFilters.maxPrice}
-                          onChange={(e) => setPendingFilters(prev => ({ ...prev, maxPrice: e.target.value }))}
-                        />
-                      </div>
-
-                      {/* Sort order */}
-                      <div>
-                        <label className="block text-sm font-medium mb-2">Sort By</label>
-                        <select
-                          className="w-full p-2 rounded bg-zinc-900 border border-zinc-700 text-white"
-                          value={pendingFilters.sort}
-                          onChange={(e) => setPendingFilters(prev => ({ ...prev, sort: e.target.value }))}
-                        >
-                          <option value="price-asc">Price: Low to High</option>
-                          <option value="price-desc">Price: High to Low</option>
-                          <option value="quantity-asc">Quantity: Low to High</option>
-                          <option value="quantity-desc">Quantity: High to Low</option>
-                        </select>
+                      <div className="flex items-center gap-2">
+                        <div className="text-xl font-bold text-white">-</div>
+                        <div className="flex-1">
+                          <label className="text-sm text-zinc-400 mb-1 block">Max Price</label>
+                          <Spinbox
+                            value={priceRange[1]}
+                            min={priceHistogram?.min || 0}
+                            max={priceHistogram?.max || maxPriceValue}
+                            step={1}
+                            onChange={(e) => {
+                              const value = Number(e.toFixed(2))
+                              setPriceRange([value, priceRange[0]])
+                              setPendingFilters((prev) => ({
+                                ...prev,
+                                maxPrice: value.toString(),
+                              }))
+                            }}
+                         />
+                        </div>
                       </div>
                     </div>
+                  </div>
 
-                    <div className="flex justify-end mt-6">
-                      <div className="mr-3">
-                      <Button variant="outline" onClick={resetFilters}>
-                        Reset Filters
-                      </Button>
-                      </div>
-                      <Button className="bg-magic-red hover:bg-red-700" onClick={() => {
-                          setShowFilters(false) 
-                          setFilters(pendingFilters)
-                          setCurrentPage(1)
-                        }
-                        }>
-                        Apply Filters
-                      </Button>
+                  {/* Quantity Range */}
+                  <div className="space-y-4">
+                    <div>
+                      <h3 className="text-xl font-medium text-white">Quantity Range</h3>
+                      <p className="text-zinc-400 text-sm">
+                        The average quantity is {quantityHistogram && (quantityHistogram.average)}
+                      </p>
                     </div>
+
+                    {/* Quantity Histogram */}
+                    {loadingHistograms ? (
+                      <div className="h-20 flex items-center justify-center">
+                        <div className="animate-pulse bg-zinc-700 h-16 w-full rounded"></div>
+                      </div>
+                    ) : quantityHistogram ? (
+                      <Histogram
+                        data={quantityHistogram.counts}
+                        bins={quantityHistogram.bins}
+                        min={quantityHistogram.min}
+                        max={quantityHistogram.max}
+                        selectedRange={quantityRange}
+                        colorStart="#7f1d1d"
+                        colorEnd="#ef4444"
+                      />
+                    ) : (
+                      <div className="h-20 flex items-center justify-center text-zinc-400">
+                        No quantity data available
+                      </div>
+                    )}
+
+                    <Slider
+                      value={quantityRange}
+                      min={quantityHistogram?.min || 0}
+                      max={quantityHistogram?.max || maxQuantityValue}
+                      step={1}
+                      onValueChange={(value) => {
+                        setQuantityRange(value as [number, number])
+                        setPendingFilters((prev) => ({
+                          ...prev,
+                          minQuantity: value[0].toString(),
+                          maxQuantity: value[1].toString(),
+                        }))
+                      }}
+                      className="my-4"
+                    />
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-sm text-zinc-400 mb-1 block">Min Quantity</label>
+                        <Spinbox
+                            value={quantityRange[0]}
+                            min={quantityHistogram?.min || 0}
+                            max={quantityHistogram?.max || maxQuantityValue}
+                            step={1}
+                            onChange={(e) => {
+                              const value = Number(e)
+                              setPriceRange([value, quantityRange[0]])
+                              setPendingFilters((prev) => ({
+                                ...prev,
+                                maxQuantity: value.toString(),
+                              }))
+                            }}
+                         />
+                        
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="text-xl font-bold text-white">-</div>
+                        <div className="flex-1">
+                          <label className="text-sm text-zinc-400 mb-1 block">Max Quantity</label>
+                          <Spinbox
+                            value={quantityRange[1]}
+                            min={quantityHistogram?.min || 0}
+                            max={quantityHistogram?.max || maxQuantityValue}
+                            step={1}
+                            onChange={(e) => {
+                              const value = Number(e)
+                              setPriceRange([value, quantityRange[1]])
+                              setPendingFilters((prev) => ({
+                                ...prev,
+                                minQuantity: value.toString(),
+                              }))
+                            }}
+                         />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between gap-4 mt-8">
+                    <Button
+                      variant="outline"
+                      onClick={resetFilters}
+                      className="flex-1 bg-zinc-700 hover:bg-zinc-600 text-white border-0"
+                    >
+                      Reset Filter
+                    </Button>
+                    <Button
+                      className="flex-1 bg-magic-red hover:bg-red-700 border-0"
+                      onClick={() => {
+                        setShowFilters(false)
+                        setFilterTags(pendingFilterTags)
+                        setFilters(pendingFilters)
+                        setCurrentPage(1)
+                      }}
+                    >
+                      Apply Filter
+                    </Button>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-        )}
+          </DialogContent>
+        </Dialog>
 
-        {/*flex-1 px-6 pb-6 overflow-y-auto*/}
         {/* Products grid */}
         <div className={`flex-1 overflow-y-auto ${isOverflowing ? "pl-6 pr-4" : "px-6"}`} ref={containerRef}>
           {loading ? (
@@ -427,15 +793,15 @@ export default function ProductsPage() {
                 cardsPerRow === 3 ? "lg:grid-cols-3" : "lg:grid-cols-4"
               } gap-6`}
             >
-              {!isUpdateRows && (products.slice(0, productsPerPage).map((product, index) => (
+              {products.slice(0, productsPerPage).map((product, index) => (
                 <ProductCard key={index} {...product} />
-              )))}
+              ))}
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center h-full py-16">
               <div className="text-2xl font-bold text-zinc-500 mb-4">No products found</div>
               <div className="text-zinc-400 mb-8">Try adjusting your search or filter criteria</div>
-              {(
+              {
                 <div className="flex gap-4">
                   {searchQuery && (
                     <Button
@@ -455,7 +821,7 @@ export default function ProductsPage() {
                     </Button>
                   )}
                 </div>
-              )}
+              }
             </div>
           )}
 
@@ -483,7 +849,7 @@ export default function ProductsPage() {
         </div>
 
         {/* Pagination for non-overflow content */}
-        {!isUpdateItems && products.length > 0 && !isOverflowing && (
+        {(!isUpdateItems || products.length <= cardsPerRow) && products.length > 0 && !isOverflowing && (
           <div className="px-6">
             <Pagination
               currentPage={currentPage}
@@ -547,28 +913,7 @@ export function Pagination({
   isUpdateItems,
   setisUpdateItems,
 }: PaginationProps) {
-  // Add a ref for the dropdown button and a useEffect for click outside
-  const dropdownRef = useRef<HTMLDivElement>(null)
-
-  // Handle click outside to close dropdown
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setShowItemsPerPageDropdown(false)
-      }
-    }
-
-    // Add event listener when dropdown is open
-    if (showItemsPerPageDropdown) {
-      document.addEventListener("mousedown", handleClickOutside)
-    }
-
-    // Clean up
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside)
-    }
-  }, [showItemsPerPageDropdown, setShowItemsPerPageDropdown])
-
+  const [openCardPerRow, setOpenCardPerRow] = useState(false)
   // Keep track of the multiplier index when changing cards per row
   const handleCardsPerRowChange = (newCardsPerRow: number) => {
     // Calculate current multiplier
@@ -576,11 +921,11 @@ export function Pagination({
     // Set new products per page maintaining the same multiplier
     setProductsPerPage(newCardsPerRow * currentMultiplier)
     setCardsPerRow(newCardsPerRow)
-    if (newCardsPerRow != cardsPerRow)
-      setisUpdateRows(true)
+    paginate(1)
+    if (newCardsPerRow != cardsPerRow) setisUpdateRows(true)
     containerRef.current?.scrollTo({
       top: 0,
-      behavior: "auto"
+      behavior: "auto",
     })
   }
 
@@ -654,7 +999,7 @@ export function Pagination({
                 <Button
                   variant={currentPage === totalPages ? "default" : "outline"}
                   className={`h-8 w-8 rounded-full p-0 ${
-                    currentPage === totalPages ? "bg-red-600 hover:bg-red-700 border-red-600" : "border-zinc-700"
+                    currentPage === totalPages ? "bg-red-600 hover:bg-red-300 border-red-600" : "border-zinc-700"
                   }`}
                   onClick={() => paginate(totalPages)}
                 >
@@ -701,44 +1046,35 @@ export function Pagination({
 
         <div className="flex items-center gap-2">
           <span className="text-sm text-zinc-400">Items per page:</span>
-          <div className="relative" ref={dropdownRef}>
-            <Button
-              variant={showItemsPerPageDropdown ? "default" : "default"}
-              className={`h-8 border-zinc-700 text-white`}
-              onClick={() => {
-                setShowItemsPerPageDropdown(!showItemsPerPageDropdown)
-              }}
-            >
-              {productsPerPage}
-              {showItemsPerPageDropdown ? (
-                <ChevronUp className="ml-1 h-3 w-3" />
-              ) : (
+          <DropdownMenu open={openCardPerRow} onOpenChange={setOpenCardPerRow}>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant={openCardPerRow ? "outlineActive" : "outline"}
+                className={`h-8 w-16 border-zinc-700 flex !justify-end items-center pr-2`}
+              >
+                {productsPerPage}
                 <ChevronDown className="ml-1 h-3 w-3" />
-              )}
-            </Button>
-
-            {showItemsPerPageDropdown && (
-              <div className="absolute right-0 bottom-full mb-1 w-24 bg-zinc-800 border border-zinc-700 rounded-md shadow-lg z-10">
-                {getItemsPerPageOptions().map((option) => (
-                  <button
-                    key={option}
-                    className="w-full text-left px-3 py-2 text-sm text-white hover:bg-zinc-700"
-                    onClick={() => {
-                      setProductsPerPage(option)
-                      setShowItemsPerPageDropdown(false)
-                      if (option!=productsPerPage){
-                        setisUpdateItems(true)
-                        setisUpdateRows(true)
-                      }
-                      paginate(1)
-                    }}
-                  >
-                    {option}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="bg-zinc-950 border-zinc-800">
+              {getItemsPerPageOptions().map((option) => (
+                <DropdownMenuItem
+                  key={option}
+                  className={cn("cursor-pointer", productsPerPage === option && "bg-zinc-800")}
+                  onClick={() => {
+                    setProductsPerPage(option)
+                    if (option != productsPerPage) {
+                      setisUpdateItems(true)
+                      setisUpdateRows(true)
+                    }
+                    paginate(1)
+                  }}
+                >
+                  {option}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </div>

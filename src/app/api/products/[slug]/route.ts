@@ -20,7 +20,7 @@ export async function GET(request: Request, context: { params: Promise<{ slug: s
   // Decode slug
   const decoded = decodeURIComponent(slug)
   // e.g. '2024-digital-&-physical-core-rulebook-bundle&pid=3&pub=wangshu-corporation'
-
+  
   // หา index ของ key แต่ละตัว
   const pidKey = "&pid="
   const pubKey = "&pub="

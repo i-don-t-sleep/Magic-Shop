@@ -13,18 +13,18 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Eye, Edit, Trash } from "lucide-react"
+import { Eye, Edit, Trash, History } from "lucide-react"
 import { showSuccessToast, showErrorToast } from "@/components/notify/Toast"
 
 export interface ProductCardProps {
   name: string
   price: string
   quantity: number
-  imageUrl: string
+  primaryImage: string
   href: string
 }
 
-export function ProductCard({ name, price, quantity, imageUrl, href }: ProductCardProps) {
+export function ProductCard({ name, price, quantity, primaryImage, href }: ProductCardProps) {
   const isOutOfStock = quantity === 0
   const statusRef = useRef<HTMLSpanElement>(null)
 
@@ -105,6 +105,13 @@ export function ProductCard({ name, price, quantity, imageUrl, href }: ProductCa
                   See Detail
                 </DropdownMenuItem>
                 <DropdownMenuItem
+                  onClick={() => router.push(`/SuperAdmins/products/history/${productId}`)}
+                  className="cursor-pointer"
+                >
+                  <History className="mr-2 h-4 w-4" />
+                  See History
+                </DropdownMenuItem>
+                <DropdownMenuItem
                   onClick={() => router.push(`/SuperAdmins/products/edit/${href}`)}
                   className="cursor-pointer"
                 >
@@ -125,7 +132,7 @@ export function ProductCard({ name, price, quantity, imageUrl, href }: ProductCa
           <Link href={`/SuperAdmins/products/${href}`} className="block px-4 pb-4">
             <div className="aspect-square relative rounded-lg overflow-hidden mb-3">
               <Image
-                src={`${imageUrl}`}
+                src={`${primaryImage}`}
                 alt={name}
                 width={0}
                 height={0}
