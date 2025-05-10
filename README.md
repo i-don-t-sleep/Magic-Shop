@@ -122,6 +122,14 @@ git push origin main //อัพลง main branch
 
 -จบ-
 
+backend user, admin, publisher (query)
+
+USER = filter >>> พวก birthday, name, surname, username, (contactInfo: defaultEmailAddressID->email, defaultPhoneID->PhoneNumber, defaultAddressID->city, country, postalCode), accountStatus, sessionState, profilePicture, mimeType, role, lastLogin
+
+Admin(USER role="Super Admin"/role="Data Entry Admin") = filter >>> พวก birthday, name, surname, username, (contactInfo: defaultEmailAddressID->email, defaultPhoneID->PhoneNumber), accountStatus, sessionState, profilePicture, mimeType, role, lastLogin
+
+Publishers = filter >>> username, name, description, (contactInfo: x, likedIn, facebook, instagram, defaultEmailAddressID->email, defaultPhoneID->PhoneNumber, defaultAddressID->city, country, postalCode), mimeType, publisherWeb, sessionState, servicesFee
+
 ## Getting Started
 
 First, run the development server:

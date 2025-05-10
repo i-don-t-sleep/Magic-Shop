@@ -357,6 +357,7 @@ export default function ProductsPage() {
 
       const response = await fetch(`/api/products?${queryParams.toString()}`)
       const data = await response.json()
+      alert(`/api/products?${queryParams.toString()}`)
 
       setProducts(data.data)
       setTotalRecords(data.total)
