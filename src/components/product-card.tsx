@@ -153,7 +153,7 @@ export function ProductCard({ name, price, quantity, primaryImage, href }: Produ
                   WebkitTextFillColor: "white",
                 }}
               >
-                {price}
+                ${price}
               </span>
             </div>
           </Link>

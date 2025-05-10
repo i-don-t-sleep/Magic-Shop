@@ -647,7 +647,6 @@ export default function ProductsPage() {
                         />
                       </div>
                       <div className="flex items-center gap-2">
-                        <div className="text-xl font-bold text-white">-</div>
                         <div className="flex-1">
                           <label className="text-sm text-zinc-400 mb-1 block">Max Price</label>
                           <Spinbox
@@ -735,7 +734,6 @@ export default function ProductsPage() {
                         
                       </div>
                       <div className="flex items-center gap-2">
-                        <div className="text-xl font-bold text-white">-</div>
                         <div className="flex-1">
                           <label className="text-sm text-zinc-400 mb-1 block">Max Quantity</label>
                           <Spinbox
