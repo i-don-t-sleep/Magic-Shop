@@ -2,10 +2,9 @@
 
 import type React from "react"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useMemo } from "react"
 import { ChevronDown, ChevronLeft, ChevronRight, Plus, SlidersHorizontal } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { ProductCard } from "@/components/product-card"
 import { LoadingComp } from "@/components/loading-comp"
 import Link from "next/link"
@@ -16,7 +15,7 @@ import { cn } from "@/lib/utils"
 import SuggestSearchSpan, { type ComboboxItem } from "@/components/newcomp/SuggestSearchSpan"
 import { Histogram } from "@/components/ui/histogram"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { UnifiedTagInput, type FilterOption, type FilterTag } from "@/components/ui/uniified-tag-input"
+import { TagInputFixed, type TagItem } from "@/components/ui/tag-input"
 import { Spinbox } from "@/components/ui/spinbox"
 
 type Product = {
@@ -68,16 +67,214 @@ export default function ProductsPage() {
   const [quantityRange, setQuantityRange] = useState<[number, number]>([0, 100])
   const [maxPriceValue, setMaxPriceValue] = useState(1000)
   const [maxQuantityValue, setMaxQuantityValue] = useState(100)
+  const [BINS, setBINS] = useState(80)
+
+  // Selected filter tags
+  const [selectedFilterTags, setSelectedFilterTags] = useState<string[]>([])
+
+  // Pending filter tags (for the filter dialog)
+  const [pendingFilterTags, setPendingFilterTags] = useState<string[]>([])
+
+  // Flag to prevent infinite loops when updating price/quantity tags
+  const [isUpdatingPriceTags, setIsUpdatingPriceTags] = useState(false)
+  const [isUpdatingQuantityTags, setIsUpdatingQuantityTags] = useState(false)
 
   // Histogram data
   const [priceHistogram, setPriceHistogram] = useState<HistogramData | null>(null)
   const [quantityHistogram, setQuantityHistogram] = useState<HistogramData | null>(null)
   const [loadingHistograms, setLoadingHistograms] = useState(false)
 
-  // Filter tags
-  const [filterTags, setFilterTags] = useState<FilterTag[]>([])
-  const [pendingFilterTags, setPendingFilterTags] = useState<FilterTag[]>([])
+  // ฟังก์ชันสำหรับปัดเศษให้เป็นจำนวนเต็ม
+  const roundToInteger = (num: number): number => {
+    return Math.round(num)
+  }
 
+  // Create a unified list of all filter options
+  const allFilterOptions = useMemo(() => {
+    return [
+      // Category options
+      ...categoryEnum.map((category) => ({
+        value: `category:${category}`,
+        label: category,
+        type: "category",
+        typeLabel: "Category",
+        color: "#4f46e5", // Indigo color for categories
+      })),
+
+      // Publisher options
+      ...publisherNames.map((publisher) => ({
+        value: `publisher:${publisher}`,
+        label: publisher,
+        type: "publisher",
+        typeLabel: "Publisher",
+        color: "#0891b2", // Cyan color for publishers
+      })),
+
+      // Status options
+      ...statusEnum.map((status) => ({
+        value: `status:${status}`,
+        label: status,
+        type: "status",
+        typeLabel: "Status",
+        color: "#059669", // Green color for statuses
+      })),
+
+      // Sort options
+      { value: "sort:price-asc", label: "Price: Low to High", type: "sort", typeLabel: "Sort By", color: "#be123c" },
+      { value: "sort:price-desc", label: "Price: High to Low", type: "sort", typeLabel: "Sort By", color: "#be123c" },
+      {
+        value: "sort:quantity-asc",
+        label: "Quantity: Low to High",
+        type: "sort",
+        typeLabel: "Sort By",
+        color: "#be123c",
+      },
+      {
+        value: "sort:quantity-desc",
+        label: "Quantity: High to Low",
+        type: "sort",
+        typeLabel: "Sort By",
+        color: "#be123c",
+      },
+      { value: "sort:id-desc", label: "Newest First", type: "sort", typeLabel: "Sort By", color: "#be123c" },
+      { value: "sort:id-asc", label: "Oldest First", type: "sort", typeLabel: "Sort By", color: "#be123c" },
+    ] as TagItem[]
+  }, [categoryEnum, publisherNames, statusEnum])
+
+  // Helper function to extract filter values from tags
+  const extractFiltersFromTags = (tags: string[]): FilterState => {
+    const filters: FilterState = {
+      categories: [],
+      publishers: [],
+      minPrice: "0.00",
+      maxPrice: "1000.00",
+      minQuantity: "0",
+      maxQuantity: "1000",
+      statuses: [],
+      sort: "price-asc", // Default sort
+    }
+
+    tags.forEach((tag) => {
+      const [type, value] = tag.split(":")
+
+      switch (type) {
+        case "category":
+          filters.categories.push(value)
+          break
+        case "publisher":
+          filters.publishers.push(value)
+          break
+        case "status":
+          filters.statuses.push(value)
+          break
+        case "sort":
+          filters.sort = value
+          break
+        case "price-min":
+          filters.minPrice = value
+          break
+        case "price-max":
+          filters.maxPrice = value
+          break
+        case "quantity-min":
+          filters.minQuantity = value
+          break
+        case "quantity-max":
+          filters.maxQuantity = value
+          break
+      }
+    })
+
+    return filters
+  }
+
+  // Update price range tags
+  useEffect(() => {
+    if (showFilters && !isUpdatingPriceTags && priceHistogram) {
+      setIsUpdatingPriceTags(true)
+
+      // Get current price min/max tags
+      const currentMinTag = pendingFilterTags.find((tag) => tag.startsWith("price-min:"))
+      const currentMaxTag = pendingFilterTags.find((tag) => tag.startsWith("price-max:"))
+
+      // Get current values from tags
+      const currentMinValue = currentMinTag ? Number(currentMinTag.split(":")[1]) : null
+      const currentMaxValue = currentMaxTag ? Number(currentMaxTag.split(":")[1]) : null
+
+      // Only update tags if the slider values are different from current tag values
+      const needsMinUpdate =
+        priceRange[0] >= priceHistogram.min && (currentMinValue === null || priceRange[0] !== currentMinValue)
+
+      const needsMaxUpdate =
+        priceRange[1] <= priceHistogram.max && (currentMaxValue === null || priceRange[1] !== currentMaxValue)
+
+      if (needsMinUpdate || needsMaxUpdate) {
+        // Remove existing price tags
+        const tagsWithoutPrice = pendingFilterTags.filter(
+          (tag) => !tag.startsWith("price-min:") && !tag.startsWith("price-max:"),
+        )
+
+        // Add new price tags if values are set
+        const newTags = [...tagsWithoutPrice]
+
+        if (needsMinUpdate) {
+          newTags.push(`price-min:${priceRange[0]}`)
+        }
+
+        if (needsMaxUpdate) {
+          newTags.push(`price-max:${priceRange[1]}`)
+        }
+
+        setPendingFilterTags(newTags)
+      }
+
+      setIsUpdatingPriceTags(false)
+    }
+  }, [priceRange, priceHistogram, showFilters])
+
+  // Update quantity range tags
+  useEffect(() => {
+    if (showFilters && !isUpdatingQuantityTags && quantityHistogram) {
+      setIsUpdatingQuantityTags(true)
+
+      // Get current quantity min/max tags
+      const currentMinTag = pendingFilterTags.find((tag) => tag.startsWith("quantity-min:"))
+      const currentMaxTag = pendingFilterTags.find((tag) => tag.startsWith("quantity-max:"))
+
+      // Get current values from tags
+      const currentMinValue = currentMinTag ? Number(currentMinTag.split(":")[1]) : null
+      const currentMaxValue = currentMaxTag ? Number(currentMaxTag.split(":")[1]) : null
+
+      // Only update tags if the slider values are different from current tag values
+      const needsMinUpdate =
+        quantityRange[0] > quantityHistogram.min && (currentMinValue === null || quantityRange[0] !== currentMinValue)
+
+      const needsMaxUpdate =
+        quantityRange[1] < quantityHistogram.max && (currentMaxValue === null || quantityRange[1] !== currentMaxValue)
+
+      if (needsMinUpdate || needsMaxUpdate) {
+        // Remove existing quantity tags
+        const tagsWithoutQuantity = pendingFilterTags.filter(
+          (tag) => !tag.startsWith("quantity-min:") && !tag.startsWith("quantity-max:"),
+        )
+
+        // Add new quantity tags if values are set
+        const newTags = [...tagsWithoutQuantity]
+
+        if (needsMinUpdate) {
+          newTags.push(`quantity-min:${quantityRange[0]}`)
+        }
+
+        if (needsMaxUpdate) {
+          newTags.push(`quantity-max:${quantityRange[1]}`)
+        }
+
+        setPendingFilterTags(newTags)
+      }
+
+      setIsUpdatingQuantityTags(false)
+    }
+  }, [quantityRange, quantityHistogram, showFilters])
 
   const fetchMetadata = async () => {
     const res = await fetch("/api/products/meta")
@@ -92,8 +289,8 @@ export default function ProductsPage() {
       if (data.maxQuantity) setMaxQuantityValue(data.maxQuantity)
 
       // Initialize ranges
-      setPriceRange([0, data.maxPrice || 1000])
-      setQuantityRange([0, data.maxQuantity || 100])
+      setPriceRange([data.minPrice, data.maxPrice || 1000])
+      setQuantityRange([data.minQuantity, data.maxQuantity || 100])
     } else {
       console.error("Failed to fetch metadata")
     }
@@ -101,7 +298,7 @@ export default function ProductsPage() {
 
   const fetchHistograms = async () => {
     setLoadingHistograms(true)
-    const bins = 90
+    const bins = 80
     try {
       // Fetch price histogram
       const priceRes = await fetch(`/api/products/histogram?field=price&bins=${bins}`)
@@ -129,7 +326,6 @@ export default function ProductsPage() {
     }
   }
 
-  // after add product, update product
   useEffect(() => {
     fetchMetadata()
     fetchHistograms()
@@ -146,119 +342,12 @@ export default function ProductsPage() {
     statuses: [],
     sort: "price-asc",
   })
-  const [pendingFilters, setPendingFilters] = useState<FilterState>(filters)
 
-
-  // Convert filter tags to filter state
-  const updateFiltersFromTags = (tags: FilterTag[]) => {
-    const newFilters: FilterState = {
-      categories: [],
-      publishers: [],
-      minPrice: "",
-      maxPrice: "",
-      minQuantity: "",
-      maxQuantity: "",
-      statuses: [],
-      sort: "price-asc",
-    }
-
-    tags.forEach((tag) => {
-      switch (tag.type) {
-        case "category":
-          newFilters.categories.push(tag.value)
-          break
-        case "publisher":
-          newFilters.publishers.push(tag.value)
-          break
-        case "status":
-          newFilters.statuses.push(tag.value)
-          break
-        case "sort":
-          newFilters.sort = tag.value
-          break
-        case "price-min":
-          newFilters.minPrice = tag.value
-          break
-        case "price-max":
-          newFilters.maxPrice = tag.value
-          break
-        case "quantity-min":
-          newFilters.minQuantity = tag.value
-          break
-        case "quantity-max":
-          newFilters.maxQuantity = tag.value
-          break
-      }
-    })
-
-    return newFilters
-  }
-
-  // Update filter tags when price/quantity ranges change
+  // Update filters when selected tags change
   useEffect(() => {
-    if (showFilters) {
-      // Remove existing price tags
-      const tagsWithoutPrice = pendingFilterTags.filter((tag) => tag.type !== "price-min" && tag.type !== "price-max")
-
-      // Add new price tags if values are set
-      const newTags = [...tagsWithoutPrice]
-
-      if (priceRange[0] > (priceHistogram?.min || 0)) {
-        newTags.push({
-          type: "price-min",
-          typeLabel: "Min Price",
-          value: priceRange[0].toString(),
-          label: `$${priceRange[0]}`,
-        })
-      }
-
-      if (priceRange[1] < (priceHistogram?.max || maxPriceValue)) {
-        newTags.push({
-          type: "price-max",
-          typeLabel: "Max Price",
-          value: priceRange[1].toString(),
-          label: `$${priceRange[1]}`,
-        })
-      }
-
-      setPendingFilterTags(newTags)
-      setPendingFilters(updateFiltersFromTags(newTags))
-    }
-  }, [priceRange, priceHistogram])
-
-  // Update filter tags when quantity ranges change
-  useEffect(() => {
-    if (showFilters) {
-      // Remove existing quantity tags
-      const tagsWithoutQuantity = pendingFilterTags.filter(
-        (tag) => tag.type !== "quantity-min" && tag.type !== "quantity-max",
-      )
-
-      // Add new quantity tags if values are set
-      const newTags = [...tagsWithoutQuantity]
-
-      if (quantityRange[0] > (quantityHistogram?.min || 0)) {
-        newTags.push({
-          type: "quantity-min",
-          typeLabel: "Min Quantity",
-          value: quantityRange[0].toString(),
-          label: quantityRange[0].toString(),
-        })
-      }
-
-      if (quantityRange[1] < (quantityHistogram?.max || maxQuantityValue)) {
-        newTags.push({
-          type: "quantity-max",
-          typeLabel: "Max Quantity",
-          value: quantityRange[1].toString(),
-          label: quantityRange[1].toString(),
-        })
-      }
-
-      setPendingFilterTags(newTags)
-      setPendingFilters(updateFiltersFromTags(newTags))
-    }
-  }, [quantityRange, quantityHistogram])
+    const newFilters = extractFiltersFromTags(selectedFilterTags)
+    setFilters(newFilters)
+  }, [selectedFilterTags])
 
   // Calculate total pages
   const totalPages = Math.ceil(totalRecords / productsPerPage)
@@ -282,16 +371,6 @@ export default function ProductsPage() {
   // Reset filters
   const resetFilters = () => {
     setPendingFilterTags([])
-    setPendingFilters({
-      categories: [],
-      publishers: [],
-      minPrice: "",
-      maxPrice: "",
-      minQuantity: "",
-      maxQuantity: "",
-      statuses: [],
-      sort: "price-asc",
-    })
 
     // Reset ranges to histogram min/max
     if (priceHistogram) {
@@ -301,6 +380,13 @@ export default function ProductsPage() {
     if (quantityHistogram) {
       setQuantityRange([quantityHistogram.min, quantityHistogram.max])
     }
+  }
+
+  // Apply filters
+  const applyFilters = () => {
+    setSelectedFilterTags(pendingFilterTags)
+    setShowFilters(false)
+    setCurrentPage(1)
   }
 
   // Fetch products from API
@@ -357,7 +443,6 @@ export default function ProductsPage() {
 
       const response = await fetch(`/api/products?${queryParams.toString()}`)
       const data = await response.json()
-      alert(`/api/products?${queryParams.toString()}`)
 
       setProducts(data.data)
       setTotalRecords(data.total)
@@ -407,7 +492,7 @@ export default function ProductsPage() {
         setProductsPerPage(newProductsPerPage)
       }
     }
-  }, [cardsPerRow, IsFirstfetch])
+  }, [cardsPerRow, IsFirstfetch, productsPerPage])
 
   // Generate page numbers
   const pageNumbers = []
@@ -416,90 +501,118 @@ export default function ProductsPage() {
   }
 
   // Check if any filters are active
-  const hasActiveFilters = filterTags.length > 0
+  const hasActiveFilters = selectedFilterTags.length > 0
 
-  // Sort options
-  const sortOptions = [
-    { value: "price-asc", label: "Price: Low to High" },
-    { value: "price-desc", label: "Price: High to Low" },
-    { value: "quantity-asc", label: "Quantity: Low to High" },
-    { value: "quantity-desc", label: "Quantity: High to Low" },
-    { value: "id-desc", label: "Newest First" },
-    { value: "id-asc", label: "Oldest First" },
-  ]
-
-  // Create filter options for the unified tag input
-  const filterOptions: FilterOption[] = [
-    // Category options
-    ...categoryEnum.map((category) => ({
-      type: "category",
-      typeLabel: "Category",
-      value: category,
-      label: category,
-    })),
-
-    // Publisher options
-    ...publisherNames.map((publisher) => ({
-      type: "publisher",
-      typeLabel: "Publisher",
-      value: publisher,
-      label: publisher,
-    })),
-
-    // Status options
-    ...statusEnum.map((status) => ({
-      type: "status",
-      typeLabel: "Status",
-      value: status,
-      label: status,
-    })),
-
-    // Sort options
-    ...sortOptions.map((option) => ({
-      type: "sort",
-      typeLabel: "Sort By",
-      value: option.value,
-      label: option.label,
-    })),
-  ]
-
-  // Handle adding a tag
-  const handleAddTag = (tag: FilterTag) => {
-    // For sort type, remove any existing sort tags first
-    let newTags = [...pendingFilterTags]
-
-    if (tag.type === "sort") {
-      newTags = newTags.filter((t) => t.type !== "sort")
+  // Initialize pending filters when opening the filter dialog
+  useEffect(() => {
+    if (showFilters) {
+      setPendingFilterTags(selectedFilterTags)
     }
+  }, [showFilters, selectedFilterTags])
 
-    // Add the new tag
-    newTags.push(tag)
-
-    // Update pending filters
-    setPendingFilterTags(newTags)
-    setPendingFilters(updateFiltersFromTags(newTags))
+  // Handle adding a filter tag
+  const handleAddFilterTag = (value: string) => {
+    // For sort tags, remove any existing sort tag first
+    if (value.startsWith("sort:")) {
+      const newTags = pendingFilterTags.filter((tag) => !tag.startsWith("sort:"))
+      setPendingFilterTags([...newTags, value])
+    } else {
+      setPendingFilterTags([...pendingFilterTags, value])
+    }
   }
 
-  // Handle removing a tag
-  const handleRemoveTag = (tag: FilterTag) => {
-    const newTags = pendingFilterTags.filter((t) => !(t.type === tag.type && t.value === tag.value))
-
-    setPendingFilterTags(newTags)
-    setPendingFilters(updateFiltersFromTags(newTags))
+  // Handle removing a filter tag
+  const handleRemoveFilterTag = (value: string) => {
+    setPendingFilterTags(pendingFilterTags.filter((tag) => tag !== value))
 
     // Reset price/quantity ranges if those tags are removed
-    if (tag.type === "price-min" || tag.type === "price-max") {
-      setPriceRange([
-        tag.type === "price-min" ? priceHistogram?.min || 0 : priceRange[0],
-        tag.type === "price-max" ? priceHistogram?.max || maxPriceValue : priceRange[1],
-      ])
+    if (value.startsWith("price-min:") && priceHistogram) {
+      setPriceRange([priceHistogram.min, priceRange[1]])
+    } else if (value.startsWith("price-max:") && priceHistogram) {
+      setPriceRange([priceRange[0], priceHistogram.max])
+    } else if (value.startsWith("quantity-min:") && quantityHistogram) {
+      setQuantityRange([quantityHistogram.min, quantityRange[1]])
+    } else if (value.startsWith("quantity-max:") && quantityHistogram) {
+      setQuantityRange([quantityRange[0], quantityHistogram.max])
     }
+  }
 
-    if (tag.type === "quantity-min" || tag.type === "quantity-max") {
-      setQuantityRange([
-        tag.type === "quantity-min" ? quantityHistogram?.min || 0 : quantityRange[0],
-        tag.type === "quantity-max" ? quantityHistogram?.max || maxQuantityValue : quantityRange[1],
-      ])
+  // แก้ไขส่วนของ handler functions ใน ProductsPage component เพื่อให้ Spinbox อัพเดทค่า Slider
+
+  // แก้ไขฟังก์ชัน handleMinPriceChange
+  const handleMinPriceChange = (newMin: number) => {
+
+    if (newMin === priceRange[0]) return
+
+    // อัพเดทค่า priceRange โดยตรง
+    setPriceRange([newMin, priceRange[1]])
+
+    // อัพเดทค่า tag ด้วย
+    const tagsWithoutMinPrice = pendingFilterTags.filter((tag) => !tag.startsWith("price-min:"))
+
+    if (priceHistogram && newMin > priceHistogram.min) {
+      setPendingFilterTags([...tagsWithoutMinPrice, `price-min:${newMin}`])
+    } else {
+      setPendingFilterTags(tagsWithoutMinPrice)
+    }
+  }
+
+  // แก้ไขฟังก์ชัน handleMaxPriceChange
+  const handleMaxPriceChange = (newMax: number) => {
+    // ปัดเศษให้เป็นจำนวนเต็ม
+
+    if (newMax === priceRange[1]) return
+
+    // อัพเดทค่า priceRange โดยตรง
+    setPriceRange([priceRange[0], newMax])
+
+    // อัพเดทค่า tag ด้วย
+    const tagsWithoutMaxPrice = pendingFilterTags.filter((tag) => !tag.startsWith("price-max:"))
+
+    if (priceHistogram && newMax < priceHistogram.max) {
+      setPendingFilterTags([...tagsWithoutMaxPrice, `price-max:${newMax}`])
+    } else {
+      setPendingFilterTags(tagsWithoutMaxPrice)
+    }
+  }
+
+  // แก้ไขฟังก์ชัน handleMinQtyChange
+  const handleMinQtyChange = (newMin: number) => {
+    // ปัดเศษให้เป็นจำนวนเต็ม
+    newMin = roundToInteger(newMin)
+
+    if (newMin === quantityRange[0]) return
+
+    // อัพเดทค่า quantityRange โดยตรง
+    setQuantityRange([newMin, quantityRange[1]])
+
+    // อัพเดทค่า tag ด้วย
+    const tagsWithoutMinQty = pendingFilterTags.filter((tag) => !tag.startsWith("quantity-min:"))
+
+    if (quantityHistogram && newMin > quantityHistogram.min) {
+      setPendingFilterTags([...tagsWithoutMinQty, `quantity-min:${newMin}`])
+    } else {
+      setPendingFilterTags(tagsWithoutMinQty)
+    }
+  }
+
+  // แก้ไขฟังก์ชัน handleMaxQtyChange
+  const handleMaxQtyChange = (newMax: number) => {
+    // ปัดเศษให้เป็นจำนวนเต็ม
+    newMax = roundToInteger(newMax)
+
+    if (newMax === quantityRange[1]) return
+
+    // อัพเดทค่า quantityRange โดยตรง
+    setQuantityRange([quantityRange[0], newMax])
+
+    // อัพเดทค่า tag ด้วย
+    const tagsWithoutMaxQty = pendingFilterTags.filter((tag) => !tag.startsWith("quantity-max:"))
+
+    if (quantityHistogram && newMax < quantityHistogram.max) {
+      setPendingFilterTags([...tagsWithoutMaxQty, `quantity-max:${newMax}`])
+    } else {
+      setPendingFilterTags(tagsWithoutMaxQty)
     }
   }
 
@@ -526,28 +639,17 @@ export default function ProductsPage() {
               className={`border-zinc-700 text-white ${hasActiveFilters ? "bg-magic-red" : ""}`}
               onClick={() => {
                 setShowFilters(true)
-                setPendingFilterTags(filterTags)
-                setPriceRange([
-                  filters.minPrice ? Number.parseInt(filters.minPrice) : priceHistogram?.min || 0,
-                  filters.maxPrice ? Number.parseInt(filters.maxPrice) : priceHistogram?.max || maxPriceValue,
-                ])
-                setQuantityRange([
-                  filters.minQuantity ? Number.parseInt(filters.minQuantity) : quantityHistogram?.min || 0,
-                  filters.maxQuantity
-                    ? Number.parseInt(filters.maxQuantity)
-                    : quantityHistogram?.max || maxQuantityValue,
-                ])
               }}
             >
               <SlidersHorizontal className="h-4 w-4 mr-2" />
               Filter
               {hasActiveFilters && (
                 <span className="ml-2 bg-white text-black rounded-full w-5 h-5 flex items-center justify-center text-xs">
-                  {filterTags.length}
+                  {selectedFilterTags.length}
                 </span>
               )}
             </Button>
-            <Link href="/SuperAdmins/products/add-movement">
+            <Link href="/SuperAdmins/products/add/">
               <Button variant="outline" className="border-zinc-700 text-white">
                 <Plus className="h-4 w-4 mr-2" />
                 Add Product
@@ -558,30 +660,30 @@ export default function ProductsPage() {
 
         {/* Filter Dialog */}
         <Dialog open={showFilters} onOpenChange={setShowFilters}>
-          <DialogContent className="sm:max-w-[500px] bg-gradient-to-t from-magic-iron-1 from-50% to-magic-iron-2 to-100% border-zinc-700 p-0 overflow-hidden">  
-            <DialogHeader className="max-h-[20vh] pt-4 flex items-center justify-center bg-gradient-to-t from-magic-iron-1 from-20% to-magic-iron-2 to-80% border-zinc-700">
-              <DialogTitle className="flex text-2xl font-semibold text-white"> <SlidersHorizontal className="h-7 w-7 mr-2 text-white" /> Filter Products</DialogTitle>
-              <div className="w-full h-px bg-zinc-700" />
-            </DialogHeader>
-            <div className="max-h-[60vh] overflow-auto">
-              <div className="pt-6 pb-6 px-6">
+          <DialogContent className="sm:max-w-[500px] bg-zinc-800 border-zinc-700 p-0 overflow-hidden">
+            <ScrollArea className="max-h-[90vh] ">
+              <div className="p-6">
+                <DialogHeader className="mb-6 flex items-center justify-center gap-3">
+                  <div className="flex flex-col items-center gap-1">
+                    <div className="w-6 h-0.5 bg-white rounded-full"></div>
+                    <div className="w-4 h-0.5 bg-white rounded-full"></div>
+                    <div className="w-6 h-0.5 bg-white rounded-full"></div>
+                  </div>
+                  <DialogTitle className="text-3xl font-semibold text-white">Filter Products</DialogTitle>
+                </DialogHeader>
+
                 <div className="space-y-6">
-                  {/* Unified Tag Input */}
+                  {/* Unified Tag Input for all filters */}
                   <div className="space-y-2">
-                  <h3 className="text-xl font-medium text-white">Filters</h3>
-                    <UnifiedTagInput
-                      options={filterOptions}
-                      selectedTags={pendingFilterTags.filter(
-                        (tag) =>
-                          tag.type !== "price-min" &&
-                          tag.type !== "price-max" &&
-                          tag.type !== "quantity-min" &&
-                          tag.type !== "quantity-max",
-                      )}
-                      onTagSelect={handleAddTag}
-                      onTagRemove={handleRemoveTag}
+                    <h3 className="text-xl font-medium text-white">Filters</h3>
+                    <TagInputFixed
+                      items={allFilterOptions}
+                      selectedItems={pendingFilterTags}
+                      onItemSelect={handleAddFilterTag}
+                      onItemRemove={handleRemoveFilterTag}
                       placeholder="Add filters..."
-                      maxHeight="200px"
+                      fieldWidth="100%"
+                      width="100%" // Make dropdown width match the input width
                     />
                   </div>
 
@@ -590,7 +692,7 @@ export default function ProductsPage() {
                     <div>
                       <h3 className="text-xl font-medium text-white">Price Range</h3>
                       <p className="text-zinc-400 text-sm">
-                        The average price is {priceHistogram && (priceHistogram.average)}
+                        The average price is ${priceHistogram?.average.toFixed(2) || "loading..."}
                       </p>
                     </div>
 
@@ -619,12 +721,9 @@ export default function ProductsPage() {
                       max={priceHistogram?.max || maxPriceValue}
                       step={1}
                       onValueChange={(value) => {
-                        setPriceRange(value as [number, number])
-                        setPendingFilters((prev) => ({
-                          ...prev,
-                          minPrice: value[0].toString(),
-                          maxPrice: value[1].toString(),
-                        }))
+                        // ปัดเศษให้เป็นจำนวนเต็ม
+                        const roundedValue: [number, number] = [value[0], value[1]]
+                        setPriceRange(roundedValue)
                       }}
                       className="my-4"
                     />
@@ -637,17 +736,12 @@ export default function ProductsPage() {
                           min={priceHistogram?.min || 0}
                           max={priceHistogram?.max || maxPriceValue}
                           step={1}
-                          onChange={(e) => {
-                            const value = Number(e.toFixed(2))
-                            setPriceRange([value, priceRange[1]])
-                            setPendingFilters((prev) => ({
-                              ...prev,
-                              minPrice: value.toString(),
-                            }))
-                          }}
+                          decimalPoint={2} 
+                          onChange={handleMinPriceChange}
                         />
                       </div>
                       <div className="flex items-center gap-2">
+                        <div className="text-xl font-bold pr-1"></div>
                         <div className="flex-1">
                           <label className="text-sm text-zinc-400 mb-1 block">Max Price</label>
                           <Spinbox
@@ -655,15 +749,9 @@ export default function ProductsPage() {
                             min={priceHistogram?.min || 0}
                             max={priceHistogram?.max || maxPriceValue}
                             step={1}
-                            onChange={(e) => {
-                              const value = Number(e.toFixed(2))
-                              setPriceRange([value, priceRange[0]])
-                              setPendingFilters((prev) => ({
-                                ...prev,
-                                maxPrice: value.toString(),
-                              }))
-                            }}
-                         />
+                            decimalPoint={2} 
+                            onChange={handleMaxPriceChange}
+                          />
                         </div>
                       </div>
                     </div>
@@ -674,7 +762,7 @@ export default function ProductsPage() {
                     <div>
                       <h3 className="text-xl font-medium text-white">Quantity Range</h3>
                       <p className="text-zinc-400 text-sm">
-                        The average quantity is {quantityHistogram && (quantityHistogram.average)}
+                        The average quantity is {quantityHistogram?.average.toFixed(0) || "loading..."}
                       </p>
                     </div>
 
@@ -705,12 +793,9 @@ export default function ProductsPage() {
                       max={quantityHistogram?.max || maxQuantityValue}
                       step={1}
                       onValueChange={(value) => {
-                        setQuantityRange(value as [number, number])
-                        setPendingFilters((prev) => ({
-                          ...prev,
-                          minQuantity: value[0].toString(),
-                          maxQuantity: value[1].toString(),
-                        }))
+                        // ปัดเศษให้เป็นจำนวนเต็ม
+                        const roundedValue: [number, number] = [value[0], value[1]]
+                        setQuantityRange(roundedValue)
                       }}
                       className="my-4"
                     />
@@ -719,22 +804,15 @@ export default function ProductsPage() {
                       <div>
                         <label className="text-sm text-zinc-400 mb-1 block">Min Quantity</label>
                         <Spinbox
-                            value={quantityRange[0]}
-                            min={quantityHistogram?.min || 0}
-                            max={quantityHistogram?.max || maxQuantityValue}
-                            step={1}
-                            onChange={(e) => {
-                              const value = Number(e)
-                              setPriceRange([value, quantityRange[0]])
-                              setPendingFilters((prev) => ({
-                                ...prev,
-                                maxQuantity: value.toString(),
-                              }))
-                            }}
-                         />
-                        
+                          value={quantityRange[0]}
+                          min={quantityHistogram?.min || 0}
+                          max={quantityHistogram?.max || maxQuantityValue}
+                          step={1}
+                          onChange={handleMinQtyChange}
+                        />
                       </div>
                       <div className="flex items-center gap-2">
+                        <div className="text-xl font-bold text-white pr-1"></div>
                         <div className="flex-1">
                           <label className="text-sm text-zinc-400 mb-1 block">Max Quantity</label>
                           <Spinbox
@@ -742,15 +820,8 @@ export default function ProductsPage() {
                             min={quantityHistogram?.min || 0}
                             max={quantityHistogram?.max || maxQuantityValue}
                             step={1}
-                            onChange={(e) => {
-                              const value = Number(e)
-                              setPriceRange([value, quantityRange[1]])
-                              setPendingFilters((prev) => ({
-                                ...prev,
-                                minQuantity: value.toString(),
-                              }))
-                            }}
-                         />
+                            onChange={handleMaxQtyChange}
+                          />
                         </div>
                       </div>
                     </div>
@@ -764,21 +835,13 @@ export default function ProductsPage() {
                     >
                       Reset Filter
                     </Button>
-                    <Button
-                      className="flex-1 bg-magic-red hover:bg-red-700 border-0"
-                      onClick={() => {
-                        setShowFilters(false)
-                        setFilterTags(pendingFilterTags)
-                        setFilters(pendingFilters)
-                        setCurrentPage(1)
-                      }}
-                    >
+                    <Button className="flex-1 bg-magic-red hover:bg-red-700 border-0" onClick={applyFilters}>
                       Apply Filter
                     </Button>
                   </div>
                 </div>
               </div>
-            </div>
+            </ScrollArea>
           </DialogContent>
         </Dialog>
 
@@ -814,8 +877,20 @@ export default function ProductsPage() {
                       Clear Search
                     </Button>
                   )}
-                  {!showFilters && hasActiveFilters && (
-                    <Button variant="outline" className="border-zinc-700 text-white" onClick={resetFilters}>
+                  {hasActiveFilters && (
+                    <Button
+                      variant="outline"
+                      className="border-zinc-700 text-white"
+                      onClick={() => {
+                        setSelectedFilterTags([])
+                        if (priceHistogram) {
+                          setPriceRange([priceHistogram.min, priceHistogram.max])
+                        }
+                        if (quantityHistogram) {
+                          setQuantityRange([quantityHistogram.min, quantityHistogram.max])
+                        }
+                      }}
+                    >
                       Clear Filters
                     </Button>
                   )}

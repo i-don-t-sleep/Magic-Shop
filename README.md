@@ -5,6 +5,16 @@
 - เพิ่ม API สำหรับการดึง blob มาใช้งาน และปรับ api ตัวอย่าง Product และ products/slug
 - ยังไม่เสร็จ ขอไปพักก่อน
 
+
+## วิธี install magicshopdb
+
+สร้าง magicshop (สร้าง database ใน phpmyadmin ก่อน) แล้วรันคำสั่งนี้
+
+SET GLOBAL max_allowed_packet = 64 * 1024 * 1024 * 1024;
+
+หลังจากนั้น import ไฟล์ magicshop_trigger_img_V7.sql 
+
+
 ##U need to install!!
 
 npm install @radix-ui/react-dropdown-menu
@@ -32,6 +42,8 @@ npm install @headlessui/react
 npm install @heroicons/react
 
 npm i @radix-ui/react-scroll-area
+
+npm install @heroui/tabs
 
 ##Some mySQL adjustment
 

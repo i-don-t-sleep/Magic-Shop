@@ -10,6 +10,9 @@ import { showSuccessToast, showErrorToast, showLoadingToast } from "@/components
 import Image from "next/image"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
+import { Spinbox } from "@/components/ui/spinbox"
+import SearchCombobox from "@/components/newcomp/comboboxfixed"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 
 interface Publisher {
   id: number
@@ -64,17 +67,63 @@ export default function AddProductMovementPage() {
   const [availableWarehouses, setAvailableWarehouses] = useState<string[]>([])
   const [productWarehouse, setProductWarehouse] = useState<string | null>(null)
 
-  // Categories list
-  const categories: Category[] = [
-    { value: "Rulebook", label: "Rulebook" },
-    { value: "Miniature", label: "Miniature" },
-    { value: "Dice", label: "Dice" },
-    { value: "Game Aid", label: "Game Aid" },
-    { value: "Digital Content", label: "Digital Content" },
-    { value: "Merchandise", label: "Merchandise" },
-    { value: "Custom Content", label: "Custom Content" },
-    { value: "etc...", label: "Other" },
-  ]
+  // For category combobox
+  const [categoryItems, setCategoryItems] = useState<{ name: string }[]>([])
+  const [selectedCategoryItem, setSelectedCategoryItem] = useState<{ name: string } | undefined>(undefined)
+
+  // For publisher combobox
+  const [publisherItems, setPublisherItems] = useState<{ name: string; id: number; servicesFee?: number }[]>([])
+  const [selectedPublisherItem, setSelectedPublisherItem] = useState<
+    { name: string; id: number; servicesFee?: number } | undefined
+  >(undefined)
+
+  // For add new modals
+  const [showAddCategoryModal, setShowAddCategoryModal] = useState(false)
+  const [showAddPublisherModal, setShowAddPublisherModal] = useState(false)
+  const [newCategoryName, setNewCategoryName] = useState("")
+  const [newPublisherName, setNewPublisherName] = useState("")
+  const [newPublisherUsername, setNewPublisherUsername] = useState("")
+  const [newPublisherPassword, setNewPublisherPassword] = useState("")
+  const [newPublisherServicesFee, setNewPublisherServicesFee] = useState("30.0")
+  const [newPublisherDescription, setNewPublisherDescription] = useState("")
+  const [newPublisherWeb, setNewPublisherWeb] = useState("")
+  const [isAddingCategory, setIsAddingCategory] = useState(false)
+  const [isAddingPublisher, setIsAddingPublisher] = useState(false)
+
+  // Declare missing state variables
+  const [categoryEnum, setCategoryEnum] = useState<string[]>([])
+  const [statusEnum, setStatusEnum] = useState<string[]>([])
+  const [publisherNames, setPublisherNames] = useState<string[]>([])
+  const [maxPriceValue, setMaxPriceValue] = useState<number>(0)
+  const [maxQuantityValue, setMaxQuantityValue] = useState<number>(0)
+  const [priceRange, setPriceRange] = useState<number[]>([0, 1000])
+  const [quantityRange, setQuantityRange] = useState<number[]>([0, 100])
+
+  // Categories will be fetched from API
+  const [categories, setCategories] = useState<Category[]>([])
+
+
+//------
+
+  const fetchMetadata = async () => {
+    const res = await fetch("/api/products/meta")
+    const data = await res.json()
+    if (data.success) {
+      setCategoryEnum(data.categoryEnum)
+      setStatusEnum(data.statusEnum)
+      setPublisherNames(data.publishers)
+
+      // Get max price and quantity for sliders
+      if (data.maxPrice) setMaxPriceValue(data.maxPrice)
+      if (data.maxQuantity) setMaxQuantityValue(data.maxQuantity)
+
+      // Initialize ranges
+      setPriceRange([data.minPrice, data.maxPrice || 1000])
+      setQuantityRange([data.minQuantity, data.maxQuantity || 100])
+    } else {
+      console.error("Failed to fetch metadata")
+    }
+  }
 
   // Fetch publishers and existing products on component mount
   useEffect(() => {
@@ -86,8 +135,46 @@ export default function AddProductMovementPage() {
 
         if (publishersData.success) {
           setPublishers(publishersData.publishers)
+          // Format for combobox
+          setPublisherItems(
+            publishersData.publishers.map((pub: Publisher) => ({
+              name: pub.name + (pub.servicesFee ? ` (Fee: ${pub.servicesFee}%)` : ""),
+              id: pub.id,
+              servicesFee: pub.servicesFee,
+            })),
+          )
         } else {
           showErrorToast("Failed to load publishers")
+        }
+
+        // Fetch categories
+        const categoriesResponse = await fetch("/api/categories")
+        const categoriesData = await categoriesResponse.json()
+
+        if (categoriesData.success) {
+          // Format categories for both state variables
+          const formattedCategories = categoriesData.categories.map((cat: string) => ({
+            value: cat,
+            label: cat,
+          }))
+          setCategories(formattedCategories)
+
+          // Format for combobox
+          setCategoryItems(categoriesData.categories.map((cat: string) => ({ name: cat })))
+        } else {
+          // Set default categories if API fails
+          setCategories([
+            { value: "Rulebook", label: "Rulebook" },
+            { value: "Miniature", label: "Miniature" },
+            { value: "Dice", label: "Dice" },
+            { value: "Game Aid", label: "Game Aid" },
+            { value: "Digital Content", label: "Digital Content" },
+            { value: "Merchandise", label: "Merchandise" },
+            { value: "Custom Content", label: "Custom Content" },
+            { value: "etc...", label: "Other" },
+          ])
+          setCategoryItems([])
+          showErrorToast("Failed to load categories")
         }
 
         // Fetch existing products
@@ -131,6 +218,9 @@ export default function AddProductMovementPage() {
     }
   }
 
+//-----------------------
+
+  
   // Reset movement reason when switching between new and existing product
   useEffect(() => {
     setMovementReason(isNewProduct ? "Initial stock" : "")
@@ -186,6 +276,28 @@ export default function AddProductMovementPage() {
     setWarehouseLocations(allLocations)
   }, [availableWarehouses, productWarehouse])
 
+  // Update category state when combobox selection changes
+  useEffect(() => {
+    if (selectedCategoryItem) {
+      setSelectedCategory(selectedCategoryItem.name)
+    } else {
+      setSelectedCategory("")
+    }
+  }, [selectedCategoryItem])
+
+  // Update publisher state when combobox selection changes
+  useEffect(() => {
+    if (selectedPublisherItem) {
+      const publisherId = selectedPublisherItem.id
+      const publisher = publishers.find((p) => p.id === publisherId)
+      if (publisher) {
+        setSelectedPublisher(publisher)
+      }
+    } else {
+      setSelectedPublisher(null)
+    }
+  }, [selectedPublisherItem, publishers])
+
   const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const newFiles = Array.from(e.target.files)
@@ -210,6 +322,138 @@ export default function AddProductMovementPage() {
     URL.revokeObjectURL(selectedImages[index].previewUrl)
 
     setSelectedImages((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  // Add new category
+  const handleAddCategory = async () => {
+    if (!newCategoryName.trim()) {
+      showErrorToast("Category name is required")
+      return
+    }
+
+    setIsAddingCategory(true)
+    try {
+      const response = await fetch("/api/categories", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ name: newCategoryName }),
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        showSuccessToast("Category added successfully")
+
+        // Add to categories list
+        const newCategory = { name: newCategoryName }
+        setCategoryItems((prev) => [...prev, newCategory])
+
+        // Also update the categories array
+        setCategories((prev) => [...prev, { value: newCategoryName, label: newCategoryName }])
+
+        // Select the new category
+        setSelectedCategoryItem(newCategory)
+
+        // Close modal and reset form
+        setShowAddCategoryModal(false)
+        setNewCategoryName("")
+      } else {
+        showErrorToast(data.message || "Failed to add category")
+      }
+    } catch (error) {
+      console.error("Error adding category:", error)
+      showErrorToast("An error occurred while adding the category")
+    } finally {
+      setIsAddingCategory(false)
+    }
+  }
+
+  // Add new publisher
+  const handleAddPublisher = async () => {
+    if (!newPublisherName.trim()) {
+      showErrorToast("Publisher name is required")
+      return
+    }
+
+    if (!newPublisherUsername.trim()) {
+      showErrorToast("Username is required")
+      return
+    }
+
+    if (!newPublisherPassword.trim()) {
+      showErrorToast("Password is required")
+      return
+    }
+
+    setIsAddingPublisher(true)
+    try {
+      const formData = new FormData()
+      formData.append("name", newPublisherName)
+      formData.append("username", newPublisherUsername)
+      formData.append("password", newPublisherPassword)
+      formData.append("servicesFee", newPublisherServicesFee)
+
+      if (newPublisherDescription) {
+        formData.append("description", newPublisherDescription)
+      }
+
+      if (newPublisherWeb) {
+        formData.append("publisherWeb", newPublisherWeb)
+      }
+
+      const response = await fetch("/api/publishers", {
+        method: "POST",
+        body: formData,
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        showSuccessToast("Publisher added successfully")
+
+        // Fetch updated publishers list
+        const publishersResponse = await fetch("/api/publishers")
+        const publishersData = await publishersResponse.json()
+
+        if (publishersData.success) {
+          setPublishers(publishersData.publishers)
+
+          // Format for combobox
+          const updatedPublisherItems = publishersData.publishers.map((pub: Publisher) => ({
+            name: pub.name + (pub.servicesFee ? ` (Fee: ${pub.servicesFee}%)` : ""),
+            id: pub.id,
+            servicesFee: pub.servicesFee,
+          }))
+
+          setPublisherItems(updatedPublisherItems)
+
+          // Find and select the new publisher
+          const newPublisher = updatedPublisherItems.find((p: any) => p.name.startsWith(newPublisherName))
+
+          if (newPublisher) {
+            setSelectedPublisherItem(newPublisher)
+          }
+        }
+
+        // Close modal and reset form
+        setShowAddPublisherModal(false)
+        setNewPublisherName("")
+        setNewPublisherUsername("")
+        setNewPublisherPassword("")
+        setNewPublisherServicesFee("30.0")
+        setNewPublisherDescription("")
+        setNewPublisherWeb("")
+      } else {
+        showErrorToast(data.message || "Failed to add publisher")
+      }
+    } catch (error) {
+      console.error("Error adding publisher:", error)
+      showErrorToast("An error occurred while adding the publisher")
+    } finally {
+      setIsAddingPublisher(false)
+    }
   }
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
@@ -312,6 +556,156 @@ export default function AddProductMovementPage() {
     }
   }
 
+  // Add Category Modal
+  const AddCategoryModal = (
+    <Dialog open={showAddCategoryModal} onOpenChange={setShowAddCategoryModal}>
+      <DialogContent className="bg-zinc-900 border-zinc-800 text-white">
+        <DialogHeader>
+          <DialogTitle>Add New Category</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 py-4">
+          <div className="space-y-2">
+            <label htmlFor="newCategoryName" className="text-sm font-medium">
+              Category Name <span className="text-red-500">*</span>
+            </label>
+            <Input
+              id="newCategoryName"
+              value={newCategoryName}
+              onChange={(e) => setNewCategoryName(e.target.value)}
+              placeholder="Enter category name"
+              className="bg-zinc-800 border-zinc-700"
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setShowAddCategoryModal(false)}
+            className="border-zinc-700"
+          >
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            onClick={handleAddCategory}
+            className="bg-red-600 hover:bg-red-700"
+            disabled={isAddingCategory}
+          >
+            {isAddingCategory ? "Adding..." : "Add Category"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+
+  // Add Publisher Modal
+  const AddPublisherModal = (
+    <Dialog open={showAddPublisherModal} onOpenChange={setShowAddPublisherModal}>
+      <DialogContent className="bg-zinc-900 border-zinc-800 text-white">
+        <DialogHeader>
+          <DialogTitle>Add New Publisher</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 py-4">
+          <div className="space-y-2">
+            <label htmlFor="newPublisherName" className="text-sm font-medium">
+              Publisher Name <span className="text-red-500">*</span>
+            </label>
+            <Input
+              id="newPublisherName"
+              value={newPublisherName}
+              onChange={(e) => setNewPublisherName(e.target.value)}
+              placeholder="Enter publisher name"
+              className="bg-zinc-800 border-zinc-700"
+            />
+          </div>
+          <div className="space-y-2">
+            <label htmlFor="newPublisherUsername" className="text-sm font-medium">
+              Username <span className="text-red-500">*</span>
+            </label>
+            <Input
+              id="newPublisherUsername"
+              value={newPublisherUsername}
+              onChange={(e) => setNewPublisherUsername(e.target.value)}
+              placeholder="Enter username"
+              className="bg-zinc-800 border-zinc-700"
+            />
+          </div>
+          <div className="space-y-2">
+            <label htmlFor="newPublisherPassword" className="text-sm font-medium">
+              Password <span className="text-red-500">*</span>
+            </label>
+            <Input
+              id="newPublisherPassword"
+              type="password"
+              value={newPublisherPassword}
+              onChange={(e) => setNewPublisherPassword(e.target.value)}
+              placeholder="Enter password"
+              className="bg-zinc-800 border-zinc-700"
+            />
+          </div>
+          <div className="space-y-2">
+            <label htmlFor="newPublisherServicesFee" className="text-sm font-medium">
+              Services Fee (%)
+            </label>
+            <Spinbox
+              id="newPublisherServicesFee"
+              value={Number(newPublisherServicesFee) || 30}
+              onChange={(value) => setNewPublisherServicesFee(value.toString())}
+              min={0}
+              max={100}
+              step={0.1}
+              className="w-full"
+            />
+          </div>
+          <div className="space-y-2">
+            <label htmlFor="newPublisherDescription" className="text-sm font-medium">
+              Description
+            </label>
+            <textarea
+              id="newPublisherDescription"
+              value={newPublisherDescription}
+              onChange={(e) => setNewPublisherDescription(e.target.value)}
+              rows={3}
+              placeholder="Enter publisher description"
+              className="w-full rounded-md border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm"
+            />
+          </div>
+          <div className="space-y-2">
+            <label htmlFor="newPublisherWeb" className="text-sm font-medium">
+              Website URL
+            </label>
+            <Input
+              id="newPublisherWeb"
+              value={newPublisherWeb}
+              onChange={(e) => setNewPublisherWeb(e.target.value)}
+              placeholder="https://example.com"
+              className="bg-zinc-800 border-zinc-700"
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setShowAddPublisherModal(false)}
+            className="border-zinc-700"
+          >
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            onClick={handleAddPublisher}
+            className="bg-red-600 hover:bg-red-700"
+            disabled={isAddingPublisher}
+          >
+            {isAddingPublisher ? "Adding..." : "Add Publisher"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+
   return (
     <div className="pt-3 flex flex-col h-full overflow-hidden">
       <div className="px-6 pb-3 flex justify-between items-center">
@@ -391,119 +785,67 @@ export default function AddProductMovementPage() {
                         <label htmlFor="price" className="block text-sm font-medium mb-1">
                           Price <span className="text-red-500">*</span>
                         </label>
-                        <div className="relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2">$</span>
-                          <Input
+                        <div className="flex items-center">
+                          <span className="mr-2">$</span>
+                          <Spinbox
                             id="price"
-                            value={productPrice}
-                            onChange={(e) => setProductPrice(e.target.value)}
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            placeholder="0.00"
-                            className="bg-zinc-900 border-zinc-700 pl-8"
-                            required
+                            value={Number(productPrice) || 0}
+                            onChange={(value) => setProductPrice(value.toString())}
+                            min={0}
+                            max={9999.99}
+                            step={0.01}
+                            className="w-full"
+                            disabled={isSubmitting}
                           />
                         </div>
                       </div>
 
                       <div>
-                        <label htmlFor="category" className="block text-sm font-medium mb-1">
-                          Category <span className="text-red-500">*</span>
-                        </label>
-                        <Popover open={openCategoryDropdown} onOpenChange={setOpenCategoryDropdown}>
-                          <PopoverTrigger asChild>
-                            <Button
-                              variant="outline"
-                              role="combobox"
-                              aria-expanded={openCategoryDropdown}
-                              className="w-full justify-between bg-zinc-900 border-zinc-700 text-left font-normal"
-                            >
-                              {selectedCategory
-                                ? categories.find((category) => category.value === selectedCategory)?.label
-                                : "Select category..."}
-                              <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-full p-0 bg-zinc-950 border-zinc-800">
-                            <Command className="bg-zinc-950">
-                              <CommandInput placeholder="Search category..." className="h-9 bg-zinc-900" />
-                              <CommandEmpty className="text-zinc-400">No category found.</CommandEmpty>
-                              <CommandGroup className="bg-zinc-950">
-                                {categories.map((category) => (
-                                  <CommandItem
-                                    key={category.value}
-                                    value={category.value}
-                                    onSelect={(currentValue) => {
-                                      setSelectedCategory(currentValue)
-                                      setOpenCategoryDropdown(false)
-                                    }}
-                                    className="aria-selected:bg-zinc-800"
-                                  >
-                                    {category.label}
-                                    <Check
-                                      className={`ml-auto h-4 w-4 ${
-                                        selectedCategory === category.value ? "opacity-100" : "opacity-0"
-                                      }`}
-                                    />
-                                  </CommandItem>
-                                ))}
-                              </CommandGroup>
-                            </Command>
-                          </PopoverContent>
-                        </Popover>
+                        <div className="flex justify-between items-center mb-1">
+                          <label htmlFor="category" className="block text-sm font-medium">
+                            Category <span className="text-red-500">*</span>
+                          </label>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="h-7 px-2 text-xs border-zinc-700 hover:bg-red-600 hover:text-white"
+                            onClick={() => setShowAddCategoryModal(true)}
+                          >
+                            <Plus className="h-3 w-3 mr-1" /> Add New
+                          </Button>
+                        </div>
+                        <SearchCombobox
+                          items={categoryItems}
+                          selected={selectedCategoryItem}
+                          setSelected={setSelectedCategoryItem}
+                          placeholder="Select category..."
+                          className="w-full"
+                        />
                       </div>
 
                       <div>
-                        <label htmlFor="publisherId" className="block text-sm font-medium mb-1">
-                          Publisher <span className="text-red-500">*</span>
-                        </label>
-                        <Popover open={openPublisherDropdown} onOpenChange={setOpenPublisherDropdown}>
-                          <PopoverTrigger asChild>
-                            <Button
-                              variant="outline"
-                              role="combobox"
-                              aria-expanded={openPublisherDropdown}
-                              className="w-full justify-between bg-zinc-900 border-zinc-700 text-left font-normal"
-                            >
-                              {selectedPublisher
-                                ? `${selectedPublisher.name}${
-                                    selectedPublisher.servicesFee ? ` (Fee: ${selectedPublisher.servicesFee}%)` : ""
-                                  }`
-                                : "Select publisher..."}
-                              <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-full p-0 bg-zinc-950 border-zinc-800">
-                            <Command className="bg-zinc-950">
-                              <CommandInput placeholder="Search publisher..." className="h-9 bg-zinc-900" />
-                              <CommandEmpty className="text-zinc-400">No publisher found.</CommandEmpty>
-                              <CommandList className="bg-zinc-950">
-                                <CommandGroup>
-                                  {publishers.map((publisher) => (
-                                    <CommandItem
-                                      key={publisher.id}
-                                      value={publisher.name}
-                                      onSelect={() => {
-                                        setSelectedPublisher(publisher)
-                                        setOpenPublisherDropdown(false)
-                                      }}
-                                      className="aria-selected:bg-zinc-800"
-                                    >
-                                      {publisher.name}
-                                      {publisher.servicesFee ? ` (Fee: ${publisher.servicesFee}%)` : ""}
-                                      <Check
-                                        className={`ml-auto h-4 w-4 ${
-                                          selectedPublisher?.id === publisher.id ? "opacity-100" : "opacity-0"
-                                        }`}
-                                      />
-                                    </CommandItem>
-                                  ))}
-                                </CommandGroup>
-                              </CommandList>
-                            </Command>
-                          </PopoverContent>
-                        </Popover>
+                        <div className="flex justify-between items-center mb-1">
+                          <label htmlFor="publisherId" className="block text-sm font-medium">
+                            Publisher <span className="text-red-500">*</span>
+                          </label>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="h-7 px-2 text-xs border-zinc-700 hover:bg-red-600 hover:text-white"
+                            onClick={() => setShowAddPublisherModal(true)}
+                          >
+                            <Plus className="h-3 w-3 mr-1" /> Add New
+                          </Button>
+                        </div>
+                        <SearchCombobox
+                          items={publisherItems}
+                          selected={selectedPublisherItem}
+                          setSelected={setSelectedPublisherItem}
+                          placeholder="Select publisher..."
+                          className="w-full"
+                        />
                       </div>
 
                       {/* Movement Info */}
@@ -913,6 +1255,8 @@ export default function AddProductMovementPage() {
           </div>
         </div>
       </div>
+      {AddCategoryModal}
+      {AddPublisherModal}
     </div>
   )
 }
