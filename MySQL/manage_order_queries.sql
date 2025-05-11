@@ -2,9 +2,10 @@ SELECT orderID, clientName, quantity, totalPrice, purchaseDate, shippingAddress,
 FROM (
 	SELECT Orders.orderID, CONCAT(Users.name, " ", Users.surname) as clientName, ItemOrder.quantity, ItemOrder.totalPrice, Orders.purchaseDate, CONCAT(Address.city, ", ", Address.country) as shippingAddress, Orders.orderStatus
     FROM Orders
-	JOIN ItemOrder ON Orders.orderID = ItemOrder.orderID
+    JOIN ItemOrder ON Orders.orderID = ItemOrder.orderID
     JOIN Users ON Orders.userID = Users.userID
-    JOIN Address ON Orders.shippingAddressID = Address.addressID
+    JOIN Shipping ON Orders.orderID = Shipping.orderID
+    JOIN Address ON Shipping.destinationAddressID = Address.addressID
     ) AS OrderManagementQueries
 ORDER BY purchaseDate DESC;
 
@@ -27,6 +28,10 @@ WHERE Orders.orderID = 12345; -- Placeholder Number
 
 -- CANCELLED
 UPDATE Orders SET orderStatus = 'Cancelled'
+WHERE Orders.orderID = 12345; -- Placeholder Number
+
+-- REFUNDING
+UPDATE Orders SET orderStatus = 'Refunding'
 WHERE Orders.orderID = 12345; -- Placeholder Number
 
 -- REFUNDED
