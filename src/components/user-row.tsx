@@ -1,71 +1,87 @@
-"use client"
+'use client';
 
-import { Button } from "@/components/ui/button"
+import React from 'react';
 
-export interface UserRowProps {
-  id: number
-  name: string
-  email: string
-  location: string
-  joined: string
-  frequency: number
-  isSelected: boolean
-  onToggleSelect: (id: number) => void
+/* --------- types --------- */
+export interface User {
+  id: number;
+  birthday: string;
+  name: string;
+  surname: string;
+  username: string;
+  defaultEmailAddress?: string;
+  defaultPhoneNumber?: string;
+  city?: string;
+  country?: string;
+  postalCode?: string;
+  accountStatus: 'Active' | 'Suspended' | 'Deactivated';
+  sessionState: 'Offline' | 'Online';
+  profilePicture: string | null;
+  mimeType?: string;
+  role: 'Customer' | 'Data Entry Admin' | 'Super Admin';
+  lastLogin: string;
 }
 
-export function UserRow({ id, name, email, location, joined, frequency, isSelected, onToggleSelect }: UserRowProps) {
+export interface UserRowProps {
+  user: User;
+  selected: boolean;
+  onSelect: (checked: boolean) => void;
+}
+
+/* --------- component --------- */
+export function UserRow({ user, selected, onSelect }: UserRowProps) {
   return (
     <tr className="border-b border-zinc-800 hover:bg-zinc-800/50">
+      {/* 1) Checkbox */}
       <td className="p-4">
         <input
           type="checkbox"
           className="rounded border-zinc-700 bg-zinc-800 text-red-600 focus:ring-red-600"
-          checked={isSelected}
-          onChange={() => onToggleSelect(id)}
+          checked={selected}
+          onChange={e => onSelect(e.target.checked)}
         />
       </td>
-      <td className="p-4">
+
+      {/* 2) Full Name (avatar-like initial + name) */}
+      <td className="px-4 py-2 whitespace-nowrap">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-zinc-700 flex items-center justify-center">{name.charAt(0)}</div>
-          <span>{name}</span>
-        </div>
-      </td>
-      <td className="p-4">{email}</td>
-      <td className="p-4">
-        <div className="flex items-center">
-          <span className="inline-block w-1.5 h-1.5 bg-zinc-400 rounded-full mr-2"></span>
-          {location}
-        </div>
-      </td>
-      <td className="p-4">{joined}</td>
-      <td className="p-4">
-        <div className="flex items-center gap-2">
-          <div className="w-24 bg-zinc-800 h-2 rounded-full overflow-hidden">
-            <div className="bg-red-600 h-full rounded-full" style={{ width: `${frequency}%` }}></div>
+          <div className="w-8 h-8 rounded-full bg-zinc-700 flex items-center justify-center uppercase text-sm">
+            {user.username.charAt(0)}
           </div>
-          <span className="text-sm">{frequency}%</span>
+          <span>{user.name} {user.surname}</span>
         </div>
       </td>
-      <td className="p-4 text-center">
-        <Button variant="ghost" size="icon" className="text-zinc-400">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="h-5 w-5"
-          >
-            <circle cx="12" cy="12" r="1" />
-            <circle cx="19" cy="12" r="1" />
-            <circle cx="5" cy="12" r="1" />
-          </svg>
-        </Button>
+
+      {/* 3) Email */}
+      <td className="px-4 py-2">{user.defaultEmailAddress || '-'}</td>
+
+      {/* 4) Phone */}
+      <td className="px-4 py-2">{user.defaultPhoneNumber || '-'}</td>
+
+      {/* 5) Address – truncate with “…” */}
+      <td className="px-4 py-2 max-w-[15rem]">
+        <span
+          className="block truncate"
+          title={`${user.city || '-'}, ${user.country || '-'}, ${user.postalCode || '-'}`}
+        >
+          {user.city || '-'}, {user.country || '-'}, {user.postalCode || '-'}
+        </span>
+      </td>
+
+      {/* 6) Session */}
+      <td className="px-4 py-2">{user.sessionState}</td>
+
+      {/* 7) Role */}
+      <td className="px-4 py-2">{user.role}</td>
+
+      {/* 8) Last Login */}
+      <td className="px-4 py-2 whitespace-nowrap">
+        {new Date(user.lastLogin).toLocaleDateString(undefined, {
+          year: 'numeric',
+          month: 'numeric',
+          day: 'numeric',
+        })}
       </td>
     </tr>
-  )
+  );
 }

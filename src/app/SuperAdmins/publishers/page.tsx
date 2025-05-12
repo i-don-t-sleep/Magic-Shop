@@ -1,168 +1,177 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { Search, Plus, ExternalLink } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { useRouter } from "next/navigation"
-import { LoadingComp } from "@/components/loading-comp"
-
-interface Publisher {
-  id: number
-  name: string
-  description?: string
-  servicesFee?: number
-  publisherWeb?: string
-}
+import { useState, useEffect } from "react";
+import { ChevronLeft, ChevronRight, ChevronDown, Grid, Plus } from 'lucide-react';
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { LoadingComp } from "@/components/loading-comp";
+import AddPublisherPopup from "./pop";
+import { Publisher, PublisherRow } from "@/components/publisher-row";
 
 export default function PublishersPage() {
-  const router = useRouter()
-  const [searchQuery, setSearchQuery] = useState("")
-  const [publishers, setPublishers] = useState<Publisher[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    fetchPublishers()
-  }, [])
+  const [publishers, setPublishers] = useState<Publisher[]>([]);
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [openAdd, setOpenAdd] = useState(false);
+  const rowsPerPage = 10;
+  const [currentPage, setCurrentPage] = useState(1);
 
   const fetchPublishers = async () => {
-    setLoading(true)
-    setError(null)
-
+    setLoading(true);
     try {
-      const response = await fetch("/api/publishers")
-
-      if (!response.ok) {
-        throw new Error(`Error fetching publishers: ${response.status}`)
-      }
-
-      const data = await response.json()
-      if (data.success) {
-        setPublishers(data.publishers)
-      } else {
-        throw new Error(data.message || "Failed to fetch publishers")
-      }
-    } catch (err) {
-      console.error("Error fetching publishers:", err)
-      setError(err instanceof Error ? err.message : "An unknown error occurred")
+      const res = await fetch("/api/publishers");
+      const data = await res.json();
+      if (!data.success) throw new Error(data.message);
+      setPublishers(data.publishers);
+    } catch (e: any) {
+      setError(e.message);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
-  const handleAddPublisher = () => {
-    router.push("/SuperAdmins/publishers/add")
-  }
+  useEffect(() => {
+    fetchPublishers();
+  }, []);
 
-  const filteredPublishers = publishers.filter((publisher) =>
-    publisher.name.toLowerCase().includes(searchQuery.toLowerCase()),
-  )
+  const handleAdd = (pub: Publisher) => {
+    setPublishers((prev) => [pub, ...prev]);
+  };
 
-  if (error) {
-    return (
-      <div className="pt-3 flex flex-col h-full overflow-hidden">
-        <div className="px-6 pb-6 flex items-center justify-center h-full">
-          <div className="text-center">
-            <h2 className="text-xl text-red-500 mb-4">Error loading publishers</h2>
-            <p className="text-zinc-400 mb-4">{error}</p>
-            <Button onClick={fetchPublishers}>Try Again</Button>
-          </div>
-        </div>
-      </div>
+  const handleSelect = (id: number, checked: boolean) => {
+    setSelectedIds((prev) =>
+      checked ? [...prev, id] : prev.filter((x) => x !== id)
+    );
+  };
+
+  const handleDelete = async (id: number) => {
+    try {
+      const res = await fetch(`/api/publishers?id=${id}`, { method: "DELETE" });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.message);
+      setPublishers((prev) => prev.filter((p) => p.id !== id));
+      setSelectedIds((prev) => prev.filter((x) => x !== id));
+    } catch (e: any) {
+      console.error("Delete failed:", e);
+      alert(`Delete failed: ${e.message}`);
+    }
+  };
+
+  const filteredUsers = publishers.filter(p =>
+    [p.name].some(field =>
+      field.toLowerCase().includes(searchQuery.trim().toLowerCase())
     )
-  }
+  );
+  const indexOfLast = currentPage * rowsPerPage;
+  const indexOfFirst = indexOfLast - rowsPerPage;
+  const currentUsers = filteredUsers.slice(indexOfFirst, indexOfLast);
+
+  if (error) return <div className="p-6 text-red-500">Error: {error}</div>;
+  if (loading) return <LoadingComp />;
+
+  const filtered = publishers.filter((p) =>
+    p.name.toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
-    <div className="pt-3 flex flex-col h-full overflow-hidden">
-      {/* Header with search and add button */}
-      <div className="px-6 pb-3 flex justify-between items-center">
-        <div className="w-full max-w-md">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
-            <Input
-              placeholder="Search publishers..."
-              className="pl-10 bg-zinc-900 border-zinc-800 text-white"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-        </div>
-
-        <Button className="bg-red-600 hover:bg-red-700" onClick={handleAddPublisher}>
-          <Plus className="h-4 w-4 mr-2" />
-          Add Publisher
+    <div className="p-6">
+      <div className="flex mb-4">
+        <Input
+          placeholder="Search..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="flex-1 mr-2"
+        />
+        <Button onClick={() => setOpenAdd(true)}>
+          <Plus className="mr-2 h-4 w-4" /> Add
         </Button>
       </div>
 
-      {/* Publishers grid */}
-      <div className="flex-1 px-6 pb-6 overflow-y-auto">
-        {loading ? (
-          <div className="flex items-center justify-center h-full">
-            <LoadingComp />
-          </div>
-        ) : filteredPublishers.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full">
-            <h2 className="text-xl mb-4">No publishers found</h2>
-            <p className="text-zinc-400 mb-6">
-              {searchQuery ? "Try adjusting your search" : "Add your first publisher to get started"}
-            </p>
-            <Button className="bg-red-600 hover:bg-red-700" onClick={handleAddPublisher}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add New Publisher
-            </Button>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredPublishers.map((publisher) => (
-              <PublisherCard key={publisher.id} publisher={publisher} />
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  )
-}
-
-function PublisherCard({ publisher }: { publisher: Publisher }) {
-  return (
-    <div className="p-[1px] bg-gradient-to-t from-magic-border-1 to-magic-border-2 rounded-[19px]">
-      <div className="p-[1px] bg-gradient-to-t from-magic-iron-1 from-20% to-magic-iron-2 to-80% rounded-[18px] overflow-hidden">
-        <div className="p-6">
-          <div className="flex items-center gap-4 mb-4">
-            <div className="w-16 h-16 bg-zinc-800 rounded-full flex items-center justify-center overflow-hidden">
-              {/* Publisher logo would go here */}
-              <span className="text-2xl font-bold">{publisher.name.charAt(0)}</span>
-            </div>
-            <div>
-              <h3 className="text-xl font-bold">{publisher.name}</h3>
-              {publisher.servicesFee !== undefined && (
-                <p className="text-sm text-zinc-400">Fee: {publisher.servicesFee}%</p>
-              )}
-            </div>
-          </div>
-
-          {publisher.description && <p className="text-sm text-zinc-300 mb-4 line-clamp-3">{publisher.description}</p>}
-
-          {publisher.publisherWeb && (
-            <a
-              href={publisher.publisherWeb}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center text-sm text-zinc-400 hover:text-white transition-colors"
-            >
-              <ExternalLink className="h-3 w-3 mr-1" />
-              Website
-            </a>
-          )}
-
-          <div className="mt-4 flex justify-end">
-            <Button variant="outline" size="sm" className="border-zinc-700">
-              View Details
-            </Button>
-          </div>
+      <AddPublisherPopup
+        isOpen={openAdd}
+        onClose={() => setOpenAdd(false)}
+        onAdd={handleAdd}
+      />
+      <div className="bg-zinc-900 rounded-lg overflow-hidden flex-1 flex flex-col">
+        <div className="overflow-x-auto">
+          <table className="w-full table-auto min-w-full">
+            <thead className="sticky top-0 bg-zinc-900 z-10">
+              <tr className="border-b border-zinc-800">
+                {/* <th className="px-4 py-2 text-left">
+                    <input
+                      type="checkbox"
+                      checked={
+                        currentUsers.length > 0 &&
+                        currentUsers.every(u => selectedIds.includes(u.id))
+                      }
+                      onChange={e => {
+                        const checked = e.target.checked;
+                        if (checked) {
+                          setSelectedIds([
+                            ...new Set([
+                              ...selectedIds,
+                              ...currentUsers.map(u => u.id)
+                            ])
+                          ]);
+                        } else {
+                          setSelectedIds(
+                            selectedIds.filter(id =>
+                              !currentUsers.some(u => u.id === id)
+                            )
+                          );
+                        }
+                      }}
+                    />
+                  </th> */}
+                <th className="px-4 py-2 text-left font-medium">
+                  Logo
+                </th>
+                <th className="px-4 py-2 text-left font-medium">
+                  Username
+                </th>
+                <th className="px-4 py-2 text-left font-medium">
+                  Name
+                </th>
+                <th className="px-4 py-2 text-left font-medium">
+                  Email
+                </th>
+                <th className="px-4 py-2 text-left font-medium">
+                  Phone
+                </th>
+                <th className="px-4 py-2 text-left font-medium">
+                  Location
+                </th>
+                <th className="px-4 py-2 text-left font-medium">
+                  Session
+                </th>
+                <th className="px-4 py-2 text-left font-medium">
+                  Fee
+                </th>
+                <th className="px-4 py-2 text-left font-medium">
+                  Website
+                </th>
+                <th className="px-4 py-2 text-left font-medium">
+                  Action
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((pub) => (
+                <PublisherRow
+                  key={pub.id}
+                  publisher={pub}
+                  selected={selectedIds.includes(pub.id)}
+                  onSelect={(checked) => handleSelect(pub.id, checked)}
+                  onDelete={handleDelete}
+                />
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
-  )
+  );
 }
