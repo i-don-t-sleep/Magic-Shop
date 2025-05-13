@@ -1,9 +1,11 @@
+เกียวกับ schema ของ mySQL magic shop สามารถไปได้ที่ MySQL/MAGICSHOP_SCHEMA.sql 
+
+
 อัพเดทพวก
 - เพิ่มหน้าอื่นๆ ยังไม่ได้ ปรับแต่งเพิ่มจาก vzero
 - update users,product,publishers ให้เก็บ mimeType
 - เพิ่ม sessionState enum('Online', 'Offline') [not null] ลงใน users และ publishers
 - เพิ่ม API สำหรับการดึง blob มาใช้งาน และปรับ api ตัวอย่าง Product และ products/slug
-- ยังไม่เสร็จ ขอไปพักก่อน
 
 
 ## วิธี install magicshopdb
