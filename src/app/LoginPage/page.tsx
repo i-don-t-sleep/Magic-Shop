@@ -152,7 +152,7 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* For Debug */}
+      {/* For Debug 
       <button
         type="submit"
         form="copyPass Has"
@@ -160,7 +160,7 @@ export default function LoginPage() {
         onClick={debugPasswordHash}
       >
         Copy Pass Hash for DB
-      </button>
+      </button>*/}
     </div>
   )
 }

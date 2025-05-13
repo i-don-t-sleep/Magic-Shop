@@ -1,71 +1,59 @@
-"use client"
+'use client';
 
-import { Button } from "@/components/ui/button"
+import React from 'react';
+import { User } from '@/app/SuperAdmins/users/page'; // ปรับ path ตามโครงสร้างโปรเจกต์จริง
 
 export interface UserRowProps {
-  id: number
-  name: string
-  email: string
-  location: string
-  joined: string
-  frequency: number
-  isSelected: boolean
-  onToggleSelect: (id: number) => void
+  user: User;
+  selected: boolean;
+  onSelect: (checked: boolean) => void;
 }
 
-export function UserRow({ id, name, email, location, joined, frequency, isSelected, onToggleSelect }: UserRowProps) {
+export function UserRow({ user, selected, onSelect }: UserRowProps) {
+  const {
+    id,
+    name,
+    surname,
+    defaultEmailAddress,
+    defaultPhoneNumber,
+    city,
+    country,
+    postalCode,
+    sessionState,
+    role,
+    lastLogin,
+  } = user;
+
   return (
     <tr className="border-b border-zinc-800 hover:bg-zinc-800/50">
-      <td className="p-4">
+      <td className="px-4 py-2">
         <input
           type="checkbox"
-          className="rounded border-zinc-700 bg-zinc-800 text-red-600 focus:ring-red-600"
-          checked={isSelected}
-          onChange={() => onToggleSelect(id)}
+          className="rounded border-zinc-700 bg-zinc-900 text-red-600 focus:ring-red-600"
+          checked={selected}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+            onSelect(e.target.checked)
+          }
         />
       </td>
-      <td className="p-4">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-zinc-700 flex items-center justify-center">{name.charAt(0)}</div>
-          <span>{name}</span>
-        </div>
+      <td className="px-4 py-2">{name} {surname}</td>
+      <td className="px-4 py-2">{defaultEmailAddress || '-'}</td>
+      <td className="px-4 py-2">{defaultPhoneNumber || '-'}</td>
+      <td className="px-4 py-2">
+        {city || '-'}, {country || '-'} {postalCode || ''}
       </td>
-      <td className="p-4">{email}</td>
-      <td className="p-4">
-        <div className="flex items-center">
-          <span className="inline-block w-1.5 h-1.5 bg-zinc-400 rounded-full mr-2"></span>
-          {location}
-        </div>
-      </td>
-      <td className="p-4">{joined}</td>
-      <td className="p-4">
-        <div className="flex items-center gap-2">
-          <div className="w-24 bg-zinc-800 h-2 rounded-full overflow-hidden">
-            <div className="bg-red-600 h-full rounded-full" style={{ width: `${frequency}%` }}></div>
-          </div>
-          <span className="text-sm">{frequency}%</span>
-        </div>
-      </td>
-      <td className="p-4 text-center">
-        <Button variant="ghost" size="icon" className="text-zinc-400">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="h-5 w-5"
-          >
-            <circle cx="12" cy="12" r="1" />
-            <circle cx="19" cy="12" r="1" />
-            <circle cx="5" cy="12" r="1" />
-          </svg>
-        </Button>
+      <td className="px-4 py-2">{sessionState}</td>
+      <td className="px-4 py-2">{role}</td>
+      <td className="px-4 py-2">
+        {new Date(lastLogin).toLocaleString('th-TH', {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+        })}
       </td>
     </tr>
-  )
+  );
 }
