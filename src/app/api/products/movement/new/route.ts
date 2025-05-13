@@ -12,167 +12,123 @@ export async function POST(req: NextRequest) {
     const price = Number.parseFloat(formData.get("price") as string)
     const quantity = Number.parseInt(formData.get("quantity") as string)
     const category = formData.get("category") as string
-    const publisherId = Number.parseInt(formData.get("publisherId") as string)
+    const publisherName = formData.get("publisherName") as string
     const warehouseLocation = formData.get("warehouseLocation") as string
     const reason = formData.get("reason") as string
 
-    // Get admin info from session (in a real app, this would come from auth)
-    const adminId = 1 // This would be the actual admin ID from session
-    const adminType = "SuperAdmin" // This would be determined from session
-
     // Validate required fields
-    if (
-      !name ||
-      !price ||
-      isNaN(price) ||
-      !quantity ||
-      isNaN(quantity) ||
-      !publisherId ||
-      isNaN(publisherId) ||
-      !reason
-    ) {
-      return NextResponse.json({ success: false, message: "Missing or invalid required fields" }, { status: 400 })
+    if (!name || isNaN(price) || isNaN(quantity) || !category || !publisherName || !reason) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: `Missing or invalid required fields`,
+          debug: { name, price, quantity, category, publisherName, reason },
+        },
+        { status: 400 }
+      )
     }
 
-    // Determine status based on quantity
     const status = quantity > 0 ? "Available" : "Out of Stock"
 
     const db = await connectDB()
-
-    // Start transaction
     await db.beginTransaction()
 
     try {
-      // Insert product with initial quantity of 0 (will be updated by movement)
-      const [productResult] = await db.execute<ResultSetHeader>(
-        `INSERT INTO products (name, description, price, quantity, category, status, publisherID) 
-         VALUES (?, ?, ?, 0, ?, ?, ?)`,
-        [name, description, price, category, "Out of Stock", publisherId],
+      // Get category ID
+      const [catRows] = await db.query<RowDataPacket[]>(
+        `SELECT id FROM categories WHERE name = ?`,
+        [category]
       )
+      if (catRows.length === 0) {
+        await db.rollback()
+        return NextResponse.json({ success: false, message: `Category '${category}' not found` }, { status: 400 })
+      }
+      const categoryId = catRows[0].id as number
 
-      const productId = (productResult as any)[0]?.insertId || productResult.insertId
+      // Get publisher ID
+      const [pubRows] = await db.query<RowDataPacket[]>(
+        `SELECT id FROM publishers WHERE name = ?`,
+        [publisherName]
+      )
+      if (pubRows.length === 0) {
+        await db.rollback()
+        return NextResponse.json({ success: false, message: `Publisher '${publisherName}' not found` }, { status: 400 })
+      }
+      const publisherId = pubRows[0].id as number
 
-      // Handle image uploads with descriptions
-      const images = formData.getAll("images") as File[]
-      const imageDescriptions: { [key: string]: string } = {}
+      // Insert product (initial quantity = 0)
+      const [productResult] = await db.execute<ResultSetHeader>(
+        `INSERT INTO products 
+          (name, description, price, quantity, category_id, status, publisherID) 
+         VALUES (?, ?, ?, 0, ?, ?, ?)`,
+        [name, description, price, categoryId, status, publisherId],
+      )
+      const productId = productResult.insertId
 
-      // Parse image descriptions
+      // Handle images
+      const images: { file: File; description: string }[] = []
+
       for (const [key, value] of formData.entries()) {
-        if (key.startsWith("imageDescriptions[") && key.endsWith("]")) {
-          const index = key.match(/\[(\d+)\]/)?.[1]
-          if (index) {
-            imageDescriptions[index] = value as string
-          }
+        const match = key.match(/^image(\d+)$/)
+        if (match && value instanceof File && value.size > 0) {
+          const index = match[1]
+          const desc = formData.get(`imageDescription${index}`) as string || ""
+          images.push({ file: value, description: desc })
         }
       }
 
-      if (images && images.length > 0) {
-        for (let i = 0; i < images.length; i++) {
-          const image = images[i]
-          if (image.size > 0) {
-            const buffer = Buffer.from(await image.arrayBuffer())
-            const imageName = image.name
-            const mimeType = image.type.split("/")[1] // Extract image type (png, jpeg, etc.)
-            const description = imageDescriptions[i.toString()] || ""
-
-            await db.execute(
-              `INSERT INTO productimages (productID, name, description, img, mimeType) 
-               VALUES (?, ?, ?, ?, ?)`,
-              [productId, imageName, description, buffer, mimeType],
-            )
-          }
-        }
+      for (const { file, description } of images) {
+        const buffer = Buffer.from(await file.arrayBuffer())
+        const mimeType = file.type.split("/")[1] || "jpeg"
+        await db.execute(
+          `INSERT INTO productimages (productID, name, description, img, mimeType)
+           VALUES (?, ?, ?, ?, ?)`,
+          [productId, file.name, description, buffer, mimeType]
+        )
       }
 
-      // Handle warehouse location
-      let warehouseId = null
+      // Handle warehouse assignment
+      let warehouseId: string | null = null
       if (warehouseLocation) {
-        // Check if the warehouse location is already in use
-        const [existingWarehouse] = await db.query<RowDataPacket[]>(
+        const [rows] = await db.query<RowDataPacket[]>(
           "SELECT productID FROM warehouse WHERE location = ?",
           [warehouseLocation],
         )
-
-        if (Array.isArray(existingWarehouse) && existingWarehouse.length > 0) {
-          // If the warehouse is already assigned to another product
-          if (existingWarehouse[0].productID !== null && existingWarehouse[0].productID !== productId) {
-            await db.rollback()
-            return NextResponse.json(
-              {
-                success: false,
-                message: "This warehouse location is already assigned to another product",
-              },
-              { status: 400 },
-            )
-          }
+        if (rows.length && rows[0].productID && rows[0].productID !== productId) {
+          await db.rollback()
+          return NextResponse.json(
+            { success: false, message: "This warehouse location is already assigned" },
+            { status: 400 }
+          )
         }
-
-        // Insert into warehouse table
-        await db.execute(
-          `INSERT INTO warehouse (location, productID, capacity) 
-           VALUES (?, ?, ?)`,
-          [warehouseLocation, productId, quantity],
-        )
         warehouseId = warehouseLocation
       }
 
-      // Get the structure of the productmovement table
-      const [tableInfo] = await db.query("DESCRIBE productmovement")
-      const columns = Array.isArray(tableInfo) ? (tableInfo as RowDataPacket[]) : []
+      // Record initial movement
+      await db.execute(
+        `INSERT INTO productmovement 
+          (productID, warehouseLoc, movementType, quantity, reason)
+         VALUES (?, ?, 'IN', ?, ?)`,
+        [productId, warehouseId, quantity, reason]
+      )
 
-      // Find the warehouse column name
-      let warehouseColumnName = null
-      const possibleNames = ["warehouseID", "warehouseLocation", "warehouse_id", "warehouse", "location"]
+      // Update quantity in products
+      await db.execute(
+        `UPDATE products SET quantity = ?, status = ? WHERE id = ?`,
+        [quantity, status, productId]
+      )
 
-      for (const name of possibleNames) {
-        if (columns.some((col) => col.Field === name)) {
-          warehouseColumnName = name
-          break
-        }
-      }
-
-      if (!warehouseColumnName) {
-        // If no matching column found, try to create one
-        try {
-          await db.execute("ALTER TABLE productmovement ADD COLUMN warehouseID VARCHAR(255)")
-          warehouseColumnName = "warehouseID"
-        } catch (error) {
-          console.error("Failed to add warehouseID column:", error)
-          await db.rollback()
-          return NextResponse.json(
-            {
-              success: false,
-              message: "Database schema issue: Could not find or create warehouse column",
-            },
-            { status: 500 },
-          )
-        }
-      }
-
-      // Record product movement (IN)
-      const movementSQL = `INSERT INTO productmovement (productID, ${warehouseColumnName}, movementType, quantity, reason) 
-                         VALUES (?, ?, 'IN', ?, ?)`
-
-      await db.execute(movementSQL, [productId, warehouseId, quantity, reason])
-
-      // Update product quantity and status after movement is recorded
-      await db.execute(`UPDATE products SET quantity = ?, status = ? WHERE id = ?`, [quantity, status, productId])
-
-      // Commit transaction
       await db.commit()
-
-      return NextResponse.json({
-        success: true,
-        message: "Product added successfully",
-        productId,
-      })
-    } catch (error) {
-      // Rollback on error
+      return NextResponse.json({ success: true, message: "Product added successfully", productId })
+    } catch (err) {
       await db.rollback()
-      throw error
+      throw err
     }
   } catch (error: any) {
     console.error("Error adding product:", error)
-    return NextResponse.json({ success: false, message: `Error adding product: ${error.message}` }, { status: 500 })
+    return NextResponse.json(
+      { success: false, message: `Error adding product: ${error.message}` },
+      { status: 500 }
+    )
   }
 }

@@ -117,12 +117,6 @@ export function TagInputFixed({
     setOpen(true)
   }
 
-  // Toggle dropdown on input click/focus
-  const toggleOpen = () => {
-    setOpen((o) => !o)
-    if (open) setQuery("")
-  }
-
   return (
     <div className={cn(divClassName)} style={{ width: fieldWidth }} ref={containerRef}>
       <Combobox as="div" value={selectedItems} onChange={handleChange} multiple disabled={disabled} immediate>

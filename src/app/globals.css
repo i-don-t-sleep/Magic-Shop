@@ -221,3 +221,61 @@ div.normal_toast {
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.552 0.016 285.938);
 }
+
+@layer base {
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  
+  textarea:focus {
+    outline: 2px solid #52525B; /* ใส่ความหนา, รูปแบบ, และสีที่ต้องการ */
+    outline-offset: 0;         /* ถ้าต้องการให้ชิดขอบเลย */
+    box-shadow: none;
+    border-color: theme('colors.zinc.700');
+  }
+  
+}
+
+
+input:-webkit-autofill {
+  /* เปลี่ยน background ของ autofill ใน WebKit */
+  -webkit-box-shadow: 0 0 0px 50px #806a67 inset; /* zinc-700 */
+  -webkit-text-fill-color: #F3F4F6;                /* zinc-100 หรือสีที่ต้องการ */
+}
+input:-moz-autofill {
+  /* Firefox autofill */
+  box-shadow: 0 0 0px 50px #806a67 inset;
+  -moz-text-fill-color: #F3F4F6;
+}
+/* เลือกเฉพาะ textarea เท่านั้น */
+textarea::-webkit-scrollbar {
+  width: 8px;
+  height: 10px;
+}
+textarea::-webkit-scrollbar-track {
+  background: black;
+  border-radius: 10px;
+}
+textarea::-webkit-scrollbar-thumb {
+  background-color: var(--color-magic-red);
+  border-radius: 10px;
+  border: 2px solid var(--color-magic-back);
+}
+textarea::-webkit-scrollbar-thumb:hover {
+  background-color: var(--scrollbar-hover);
+  border-color: var(--color-magic-back);
+}
+
+/* สำหรับ Firefox */
+textarea {
+  scrollbar-width: thin;  
+  scrollbar-color: var(--color-magic-red) black;
+}
+
+::-webkit-resizer{  
+  border: 9px solid rgba(38, 78, 124, 0); 	
+  border-bottom-color: var(--ring)	
+  
+}

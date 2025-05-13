@@ -1,106 +1,138 @@
 "use client"
 
-import { ChevronDown, Filter, Search } from "lucide-react"
-import { useState } from "react"
+import { ChevronDown, Filter, Plus, Search } from "lucide-react"
+import { useEffect, useState } from "react"
 
 import { ReviewCard } from "@/components/review-card"
+import { ReviewForm } from "@/components/review-form"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import type { ReviewCardProps, ReviewItemProps, ReviewWithDetails } from "@/types/reviews"
 
-const reviews = [
-  {
-    id: 1,
-    title: "2024 Dungeon Master's Guide Digital + Physical Bundle",
-    publisher: "Wizards of the coast",
-    quantity: 200,
-    price: "$59.99",
-    rating: 4.8,
-    reviewCount: 11114,
-    imageUrl: "dcfbd4a80d735ed524c31123e084659c.png",
-    ratingDistribution: [80, 15, 3, 1, 1],
-    reviews: [
-      {
-        id: 1,
-        userName: "Song Jin Woo",
-        userAvatar: "5861e0f46ef92ca30b2e3bf5f3412863.png",
-        comment: "One of the greatest D&D product of all time",
-        rating: 5,
-        date: "January 20, 2025",
-      },
-      {
-        id: 2,
-        userName: "Kirigaya Kasuto",
-        userAvatar: "15e79c509e5a3a3b09117fd3dd960f70.png",
-        comment: "Not gonna lie, it's worth every yen",
-        rating: 5,
-        date: "January 12, 2025",
-      },
-      {
-        id: 3,
-        userName: "Santipab Tongchan",
-        userAvatar: "9d0c44febd0f539d6bdc2bac6ef8e6f2.png",
-        comment: "Quality Stuff",
-        rating: 5,
-        date: "December 29, 2024",
-      },
-      {
-        id: 4,
-        userName: "Jamal Mormai",
-        userAvatar: "64f86257b99f4965a1f087852cbf7016.png",
-        comment: "Missing lots of pages",
-        rating: 3,
-        date: "January 20, 2025",
-      },
-    ],
-  },
-  {
-    id: 2,
-    title: "2024 Player's Handbook Digital + Physical Bundle",
-    publisher: "Wizards of the coast",
-    quantity: "Out of Stock",
-    price: "$59.99",
-    rating: 3.0,
-    reviewCount: 1290,
-    imageUrl: "f9657989f2f325adb5a1a578f97643ab.png",
-    ratingDistribution: [20, 20, 20, 20, 20],
-    reviews: [
-      {
-        id: 1,
-        userName: "Mormai Jamal",
-        userAvatar: "64f86257b99f4965a1f087852cbf7016.png",
-        comment: "Too many changes from the previous edition",
-        rating: 2,
-        date: "January 15, 2025",
-      },
-      {
-        id: 2,
-        userName: "Elminster Aumar",
-        userAvatar: "images.jpeg",
-        comment: "The new rules are quite balanced",
-        rating: 4,
-        date: "January 10, 2025",
-      },
-      {
-        id: 3,
-        userName: "Drizzt Do'Urden",
-        userAvatar: "1_g-7NcjhvVteOq7tsSevvsw.jpg",
-        comment: "I like the new character options",
-        rating: 5,
-        date: "December 25, 2024",
-      },
-    ],
-  },
-]
-
-export default function reviewsPage() {
+export default function ReviewsPage() {
   const [searchQuery, setSearchQuery] = useState("")
+  const [reviews, setReviews] = useState<ReviewCardProps[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [isAddReviewOpen, setIsAddReviewOpen] = useState(false)
+  const [currentUserId, setCurrentUserId] = useState<number | null>(null)
+
+  // For demo purposes, we'll set a mock current user ID
+  // In a real application, you would get this from your authentication system
+  useEffect(() => {
+    // Mock user ID - replace with actual user ID from your auth system
+    setCurrentUserId(1) // Assuming user ID 1 is logged in
+  }, [])
+
+  const fetchReviews = async () => {
+    try {
+      setLoading(true)
+      const response = await fetch(`/api/reviews?search=${encodeURIComponent(searchQuery)}`)
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch reviews")
+      }
+
+      const data = await response.json()
+
+      // Group reviews by product
+      const productMap = new Map<number, ReviewWithDetails[]>()
+      data.reviews.forEach((review: ReviewWithDetails) => {
+        const productId = review.product.id
+        if (!productMap.has(productId)) {
+          productMap.set(productId, [])
+        }
+        productMap.get(productId)?.push(review)
+      })
+
+      // Process each product's reviews
+      const processedReviews: ReviewCardProps[] = []
+
+      for (const [productId, productReviews] of productMap.entries()) {
+        if (productReviews.length === 0) continue
+
+        // Get the first review to extract product details
+        const firstReview = productReviews[0]
+        const product = firstReview.product as typeof firstReview.product & { thumbnailUrl?: string }
+
+        // Fetch rating distribution for this product
+        const ratingResponse = await fetch(`/api/reviews/ratings?productId=${productId}`)
+        const ratingData = await ratingResponse.json()
+
+        // Format individual reviews
+        const reviewItems: ReviewItemProps[] = await Promise.all(
+          productReviews.map(async (r) => ({
+            id: `${r.product.id}-${r.user.id}`,
+            userName: r.user.username,
+            userAvatar: `/api/blob/users/${encodeURIComponent(r.user.username)}`,
+            comment: r.review.comment,
+            rating: r.review.score,
+            date: new Date(r.review.createdAt).toLocaleDateString("en-US", {
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+            }),
+            userId: r.user.id,
+            productId: r.product.id,
+          })),
+        )
+
+        // Create the review card props
+        processedReviews.push({
+          id: product.id,
+          title: product.name,
+          publisher: product.publisher_name || "Unknown Publisher",
+          quantity: product.status === "Available" ? product.quantity : "Out of Stock",
+          price: `$${typeof product.price === "number" ? product.price.toFixed(2) : Number(product.price || 0).toFixed(2)}`,
+          rating: ratingData.averageRating || 0,
+          reviewCount: ratingData.reviewCount || 0,
+          imageUrl: product.thumbnailUrl??"", // Assuming this naming convention
+          ratingDistribution: ratingData.distribution,
+          reviews: reviewItems,
+        })
+      }
+
+      setReviews(processedReviews)
+    } catch (err) {
+      console.error("Error fetching reviews:", err)
+      setError("Failed to load reviews. Please try again later.")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchReviews()
+  }, [searchQuery])
 
   return (
     <div className="pt-3 flex flex-col h-full overflow-hidden">
-      <Header searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
-      <div className="flex width=120% h-screen overflow-y-auto scrollbar-overlay">
-        <Body searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
+      <Header
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        onAddReview={() => setIsAddReviewOpen(true)}
+        currentUserId={currentUserId}
+      />
+      <div className="flex w-full h-screen overflow-y-auto scrollbar-overlay">
+        <Body
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          reviews={reviews}
+          loading={loading}
+          error={error}
+          onReviewUpdated={fetchReviews}
+          currentUserId={currentUserId}
+        />
       </div>
+
+      {currentUserId && (
+        <ReviewForm
+          isOpen={isAddReviewOpen}
+          onClose={() => setIsAddReviewOpen(false)}
+          userId={currentUserId}
+          onSuccess={fetchReviews}
+        />
+      )}
     </div>
   )
 }
@@ -108,10 +140,14 @@ export default function reviewsPage() {
 export function Header({
   searchQuery,
   setSearchQuery,
+  onAddReview,
+  currentUserId,
   classN = "px-6 pb-3",
 }: {
   searchQuery: string
   setSearchQuery: (v: string) => void
+  onAddReview: () => void
+  currentUserId: number | null
   classN?: string
 }) {
   return (
@@ -121,19 +157,26 @@ export function Header({
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
             <Input
-              placeholder="Search items..."
+              placeholder="Search products..."
               className="pl-10 bg-zinc-900 border-zinc-800 text-white"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
         </div>
-        <div>
+        <div className="flex gap-2">
           <Button variant="outline" className="border-zinc-700 text-white">
             <Filter className="h-4 w-4 mr-2" />
             Filter
             <ChevronDown className="h-4 w-4 ml-2" />
           </Button>
+
+          {currentUserId && (
+            <Button onClick={onAddReview} className="bg-blue-600 hover:bg-blue-700">
+              <Plus className="h-4 w-4 mr-2" />
+              Add Review
+            </Button>
+          )}
         </div>
       </div>
     </main>
@@ -143,17 +186,48 @@ export function Header({
 export function Body({
   searchQuery,
   setSearchQuery,
+  reviews,
+  loading,
+  error,
+  onReviewUpdated,
+  currentUserId,
   classN = "px-6 pb-3",
 }: {
   searchQuery: string
   setSearchQuery: (v: string) => void
+  reviews: ReviewCardProps[]
+  loading: boolean
+  error: string | null
+  onReviewUpdated: () => void
+  currentUserId: number | null
   classN?: string
 }) {
-  const filteredReviews = reviews.filter((review) => review.title.toLowerCase().includes(searchQuery.toLowerCase()))
+  if (loading) {
+    return (
+      <div className={`${classN} w-full`}>
+        <div className="text-center py-10">
+          <p className="text-zinc-400">Loading reviews...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className={`${classN} w-full`}>
+        <div className="text-center py-10">
+          <p className="text-red-400 mb-4">{error}</p>
+          <Button onClick={() => window.location.reload()} variant="outline">
+            Try Again
+          </Button>
+        </div>
+      </div>
+    )
+  }
 
   return (
-    <div className={`${classN} space-y-4`}>
-      {filteredReviews.length === 0 ? (
+    <div className={`${classN} space-y-4 w-full`}>
+      {reviews.length === 0 ? (
         <div className="text-center py-10">
           <p className="text-zinc-400 mb-4">No reviews found</p>
           {searchQuery && (
@@ -163,7 +237,14 @@ export function Body({
           )}
         </div>
       ) : (
-        filteredReviews.map((review) => <ReviewCard key={review.id} {...review} />)
+        reviews.map((review) => (
+          <ReviewCard
+            key={review.id}
+            {...review}
+            onReviewUpdated={onReviewUpdated}
+            currentUserId={currentUserId || undefined}
+          />
+        ))
       )}
     </div>
   )

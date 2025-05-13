@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
     const minQuantity = url.searchParams.get("minQuantity") ?? ""
     const maxQuantity = url.searchParams.get("maxQuantity") ?? ""
     const statuses = url.searchParams.getAll("status")
-    const sort = url.searchParams.get("sort") ?? "price-asc"
+    const sort = url.searchParams.get("sort") ?? "id-desc"
 
     const offset = (page - 1) * limit
 
@@ -38,7 +38,7 @@ export async function GET(req: NextRequest) {
     }
 
     if (categories.length > 0) {
-      conditions.push(`p.category IN (${categories.map(() => "?").join(",")})`)
+      conditions.push(`cat.name IN (${categories.map(() => "?").join(",")})`)
       params.push(...categories)
     }
 
@@ -75,17 +75,16 @@ export async function GET(req: NextRequest) {
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : ""
 
     /* ---------- ORDER BY ---------- */
-    const orderByClause =
-      (
-        {
-          "price-asc": "ORDER BY p.price ASC",
-          "price-desc": "ORDER BY p.price DESC",
-          "quantity-asc": "ORDER BY p.quantity ASC",
-          "quantity-desc": "ORDER BY p.quantity DESC",
-          "id-asc": "ORDER BY p.id ASC",
-          "id-desc": "ORDER BY p.id DESC",
-        } as const
-      )[sort] ?? "ORDER BY p.price ASC"
+    const orderByClause = (
+      {
+        "price-asc": "ORDER BY p.price ASC",
+        "price-desc": "ORDER BY p.price DESC",
+        "quantity-asc": "ORDER BY p.quantity ASC",
+        "quantity-desc": "ORDER BY p.quantity DESC",
+        "id-asc": "ORDER BY p.id ASC",
+        "id-desc": "ORDER BY p.id DESC",
+      } as const
+    )[sort] ?? "ORDER BY p.price ASC"
 
     /* ---------- DB ---------- */
     const db = await connectDB()
@@ -95,6 +94,7 @@ export async function GET(req: NextRequest) {
       `
         SELECT COUNT(*) AS total
         FROM products p
+        LEFT JOIN categories cat ON p.category_id = cat.id
         LEFT JOIN publishers pub ON p.publisherID = pub.id
         ${whereClause}
       `,
@@ -110,7 +110,7 @@ export async function GET(req: NextRequest) {
           p.name,
           p.price,
           p.quantity,
-          p.category,
+          cat.name AS category,
           p.status,
           pub.name AS publisherName,
           (
@@ -121,6 +121,7 @@ export async function GET(req: NextRequest) {
             LIMIT 1
           ) AS primaryImage
         FROM products p
+        LEFT JOIN categories cat ON p.category_id = cat.id
         LEFT JOIN publishers pub ON p.publisherID = pub.id
         ${whereClause}
         ${orderByClause}

@@ -13,10 +13,6 @@ export async function POST(req: NextRequest) {
     const reason = formData.get("reason") as string
     const movementType = (formData.get("movementType") as string) || "IN"
 
-    // Get admin info from session (in a real app, this would come from auth)
-    const adminId = 1 // This would be the actual admin ID from session
-    const adminType = "SuperAdmin" // This would be determined from session
-
     // Validate required fields
     if (!productId || isNaN(productId) || !quantity || isNaN(quantity) || quantity <= 0 || !reason) {
       return NextResponse.json({ success: false, message: "Missing or invalid required fields" }, { status: 400 })
@@ -119,37 +115,8 @@ export async function POST(req: NextRequest) {
       const [tableInfo] = await db.query("DESCRIBE productmovement")
       const columns = Array.isArray(tableInfo) ? (tableInfo as RowDataPacket[]) : []
 
-      // Find the warehouse column name
-      let warehouseColumnName = null
-      const possibleNames = ["warehouseID", "warehouseLocation", "warehouse_id", "warehouse", "location"]
-
-      for (const name of possibleNames) {
-        if (columns.some((col) => col.Field === name)) {
-          warehouseColumnName = name
-          break
-        }
-      }
-
-      if (!warehouseColumnName) {
-        // If no matching column found, try to create one
-        try {
-          await db.execute("ALTER TABLE productmovement ADD COLUMN warehouseID VARCHAR(255)")
-          warehouseColumnName = "warehouseID"
-        } catch (error) {
-          console.error("Failed to add warehouseID column:", error)
-          await db.rollback()
-          return NextResponse.json(
-            {
-              success: false,
-              message: "Database schema issue: Could not find or create warehouse column",
-            },
-            { status: 500 },
-          )
-        }
-      }
-
       // Record product movement
-      const movementSQL = `INSERT INTO productmovement (productID, ${warehouseColumnName}, movementType, quantity, reason) 
+      const movementSQL = `INSERT INTO productmovement (productID, warehouseLoc, movementType, quantity, reason) 
                          VALUES (?, ?, ?, ?, ?)`
 
       await db.execute(movementSQL, [productId, warehouseId, movementType, quantity, reason])

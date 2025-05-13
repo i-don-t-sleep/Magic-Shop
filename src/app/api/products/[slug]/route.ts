@@ -93,3 +93,4 @@ export async function GET(request: Request, context: { params: Promise<{ slug: s
     { status: 200 },
   )
 }
+

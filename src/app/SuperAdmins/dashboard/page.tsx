@@ -2,19 +2,121 @@
 import { ChevronDown, Fullscreen, Minus, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useState, useRef, useEffect } from "react"
+import { Skeleton } from "@/components/ui/skeleton"
 
 export default function DashboardPage() {
   const [mapZoom, setMapZoom] = useState(1)
+  const [timeRange, setTimeRange] = useState("month")
+  const [loading, setLoading] = useState({
+    stats: true,
+    income: true,
+    products: true,
+    categories: true,
+    regions: true,
+  })
+
+  // State for dashboard data
+  const [stats, setStats] = useState({
+    ordersCompleted: 0,
+    newUsers: 0,
+  })
+  const [incomeData, setIncomeData] = useState([])
+  const [productStatus, setProductStatus] = useState([])
+  const [categoryData, setCategoryData] = useState([])
+  const [regionData, setRegionData] = useState({
+    NA: 0.5,
+    SA: 0.5,
+    EU: 0.5,
+    AF: 0.5,
+    AS: 0.5,
+    OC: 0.5,
+  })
+
+  // Fetch dashboard data
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        // Fetch stats
+        setLoading((prev) => ({ ...prev, stats: true }))
+        const statsRes = await fetch(
+          `/api/dashboard/stats?days=${timeRange === "month" ? 30 : timeRange === "week" ? 7 : 365}`,
+        )
+        if (statsRes.ok) {
+          const statsData = await statsRes.json()
+          setStats({
+            ordersCompleted: statsData.ordersCompleted || 0,
+            newUsers: statsData.newUsers || 0,
+          })
+        }
+        setLoading((prev) => ({ ...prev, stats: false }))
+
+        // Fetch income data
+        setLoading((prev) => ({ ...prev, income: true }))
+        const incomeRes = await fetch(`/api/dashboard/income?period=${timeRange}`)
+        if (incomeRes.ok) {
+          const incomeData = await incomeRes.json()
+          setIncomeData(incomeData)
+        }
+        setLoading((prev) => ({ ...prev, income: false }))
+
+        // Fetch product status
+        setLoading((prev) => ({ ...prev, products: true }))
+        const productsRes = await fetch("/api/dashboard/products")
+        if (productsRes.ok) {
+          const productsData = await productsRes.json()
+          setProductStatus(productsData)
+        }
+        setLoading((prev) => ({ ...prev, products: false }))
+
+        // Fetch category data
+        setLoading((prev) => ({ ...prev, categories: true }))
+        const categoriesRes = await fetch("/api/dashboard/categories")
+        if (categoriesRes.ok) {
+          const categoriesData = await categoriesRes.json()
+          setCategoryData(categoriesData)
+        }
+        setLoading((prev) => ({ ...prev, categories: false }))
+
+        // Fetch region data
+        setLoading((prev) => ({ ...prev, regions: true }))
+        const regionsRes = await fetch("/api/dashboard/regions")
+        if (regionsRes.ok) {
+          const regionsData = await regionsRes.json()
+          setRegionData(regionsData)
+        }
+        setLoading((prev) => ({ ...prev, regions: false }))
+      } catch (error) {
+        console.error("Error fetching dashboard data:", error)
+        // Set loading states to false on error
+        setLoading({
+          stats: false,
+          income: false,
+          products: false,
+          categories: false,
+          regions: false,
+        })
+      }
+    }
+
+    fetchDashboardData()
+  }, [timeRange])
 
   return (
     <div className="pt-3 flex flex-col h-full overflow-hidden">
+      <div className="w-100vh overflow-y-auto">
       <div className="px-6 pb-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* World Map */}
         <div className="lg:col-span-2 p-[1px] bg-gradient-to-t from-magic-border-1 to-magic-border-2 rounded-[19px]">
           <div className="p-[1px] bg-gradient-to-t from-magic-iron-1 from-20% to-magic-iron-2 to-80% rounded-[18px] overflow-hidden h-full">
             <div className="relative h-full">
               <div className="absolute inset-0">
-                <WorldMapWithSales zoom={mapZoom} setZoom={setMapZoom} />
+                {loading.regions ? (
+                  <div className="w-full h-full flex items-center justify-center bg-[#161616]">
+                    <Skeleton className="w-4/5 h-4/5 rounded-lg bg-zinc-800" />
+                  </div>
+                ) : (
+                  <WorldMapWithSales zoom={mapZoom} setZoom={setMapZoom} salesData={regionData} />
+                )}
               </div>
               <div className="absolute bottom-4 right-4 flex flex-col gap-2">
                 <Button variant="outline" size="icon" className="bg-zinc-800/80 border-zinc-700 text-white">
@@ -43,8 +145,12 @@ export default function DashboardPage() {
 
         {/* Stats Cards */}
         <div className="flex flex-col gap-6">
-          <StatsCard title="Orders Completed" value="7468" subtitle="in 30 days" />
-          <StatsCard title="New Users" value="1269" subtitle="in 30 days" />
+          <StatsCard
+            title="Orders Completed"
+            value={loading.stats ? null : stats.ordersCompleted.toString()}
+            subtitle="in 30 days"
+          />
+          <StatsCard title="New Users" value={loading.stats ? null : stats.newUsers.toString()} subtitle="in 30 days" />
         </div>
 
         {/* Total Income Chart */}
@@ -53,11 +159,23 @@ export default function DashboardPage() {
             <div className="p-4">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-medium">Total income</h2>
-                <Button variant="outline" className="border-zinc-700 text-white h-8">
-                  month <ChevronDown className="ml-2 h-4 w-4" />
+                <Button
+                  variant="outline"
+                  className="border-zinc-700 text-white h-8"
+                  onClick={() => {
+                    setTimeRange((prev) => (prev === "month" ? "week" : prev === "week" ? "year" : "month"))
+                  }}
+                >
+                  {timeRange} <ChevronDown className="ml-2 h-4 w-4" />
                 </Button>
               </div>
-              <IncomeChart />
+              {loading.income ? (
+                <div className="h-48 w-full">
+                  <Skeleton className="w-full h-full rounded-lg bg-zinc-800" />
+                </div>
+              ) : (
+                <IncomeChart data={incomeData} timeRange={timeRange} />
+              )}
             </div>
           </div>
         </div>
@@ -67,39 +185,59 @@ export default function DashboardPage() {
           <div className="p-[1px] bg-gradient-to-t from-magic-iron-1 from-20% to-magic-iron-2 to-80% rounded-[18px] overflow-hidden">
             <div className="p-4">
               <h2 className="text-xl font-medium mb-4">Product Status</h2>
-              <ProductStatusList />
+              {loading.products ? (
+                <div className="space-y-3">
+                  {[...Array(6)].map((_, i) => (
+                    <div key={i} className="flex items-center justify-between">
+                      <Skeleton className="h-4 w-3/4 bg-zinc-800" />
+                      <Skeleton className="h-4 w-1/5 bg-zinc-800" />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <ProductStatusList products={productStatus} />
+              )}
             </div>
           </div>
         </div>
 
-        {/* Miniatures Chart */}
+        {/* Categories Chart */}
         <div className="lg:col-span-2 p-[1px] bg-gradient-to-t from-magic-border-1 to-magic-border-2 rounded-[19px]">
           <div className="p-[1px] bg-gradient-to-t from-magic-iron-1 from-20% to-magic-iron-2 to-80% rounded-[18px] overflow-hidden">
             <div className="p-4 flex items-center justify-center">
-              <div className="relative w-48 h-48">
-                <div className="absolute inset-0 flex items-center justify-center flex-col">
-                  <div className="text-4xl font-bold">55%</div>
-                  <div className="text-sm text-zinc-400">miniatures</div>
+              {loading.categories ? (
+                <Skeleton className="w-48 h-48 rounded-full bg-zinc-800" />
+              ) : (
+                <div className="relative w-48 h-48">
+                  <div className="absolute inset-0 flex items-center justify-center flex-col">
+                    <div className="text-4xl font-bold">
+                      {categoryData.length > 0 ? `${categoryData[0]?.percentage || 0}%` : "0%"}
+                    </div>
+                    <div className="text-sm text-zinc-400">
+                      {categoryData.length > 0 ? categoryData[0]?.name || "No data" : "No categories"}
+                    </div>
+                  </div>
+                  <CategoriesPieChart categories={categoryData} />
                 </div>
-                <MiniaturesPieChart />
-              </div>
+              )}
             </div>
-            <div className="px-4 pb-4 flex justify-center gap-6">
-              <div className="flex items-center gap-2">
-                <span className="w-3 h-3 rounded-full bg-red-600"></span>
-                <span className="text-sm">Books</span>
+            {!loading.categories && categoryData.length > 0 && (
+              <div className="px-4 pb-4 flex justify-center gap-6 flex-wrap">
+                {categoryData.slice(0, 3).map((category, index) => (
+                  <div key={category.id} className="flex items-center gap-2">
+                    <span
+                      className={`w-3 h-3 rounded-full ${
+                        index === 0 ? "bg-red-600" : index === 1 ? "bg-red-800" : "bg-red-400"
+                      }`}
+                    ></span>
+                    <span className="text-sm">{category.name}</span>
+                  </div>
+                ))}
               </div>
-              <div className="flex items-center gap-2">
-                <span className="w-3 h-3 rounded-full bg-red-800"></span>
-                <span className="text-sm">Merch</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="w-3 h-3 rounded-full bg-red-400"></span>
-                <span className="text-sm">Miniatures</span>
-              </div>
-            </div>
+            )}
           </div>
         </div>
+      </div>
       </div>
     </div>
   )
@@ -107,13 +245,17 @@ export default function DashboardPage() {
 
 // ===== COMPONENT: Stats Card =====
 // Displays a key metric with title, value and subtitle
-function StatsCard({ title, value, subtitle }: { title: string; value: string; subtitle: string }) {
+function StatsCard({ title, value, subtitle }: { title: string; value: string | null; subtitle: string }) {
   return (
     <div className="p-[1px] bg-gradient-to-t from-magic-border-1 to-magic-border-2 rounded-[19px] h-full">
       <div className="p-[1px] bg-gradient-to-t from-magic-iron-1 from-20% to-magic-iron-2 to-80% rounded-[18px] overflow-hidden h-full">
         <div className="p-6 flex flex-col justify-center h-full">
           <h2 className="text-xl font-medium mb-2">{title}</h2>
-          <div className="text-6xl font-bold mb-1">{value}</div>
+          {value === null ? (
+            <Skeleton className="h-16 w-3/4 bg-zinc-800 mb-1" />
+          ) : (
+            <div className="text-6xl font-bold mb-1">{value}</div>
+          )}
           <div className="text-zinc-400">{subtitle}</div>
         </div>
       </div>
@@ -123,23 +265,13 @@ function StatsCard({ title, value, subtitle }: { title: string; value: string; s
 
 // ===== COMPONENT: World Map With Sales Data =====
 // Interactive world map showing sales data by region
-function WorldMapWithSales({ zoom, setZoom }) {
+function WorldMapWithSales({ zoom, setZoom, salesData }) {
   // State for map interaction
   const mapContainerRef = useRef(null)
   const [isDragging, setIsDragging] = useState(false)
   const [position, setPosition] = useState({ x: 0, y: 0 })
   const [startPosition, setStartPosition] = useState({ x: 0, y: 0 })
   const [tooltip, setTooltip] = useState({ show: false, content: "", x: 0, y: 0 })
-
-  // Sample sales data by region (country code: intensity value 0-1)
-  const salesData = {
-    NA: 0.9, // North America
-    SA: 0.7, // South America
-    EU: 0.8, // Europe
-    AF: 0.5, // Africa
-    AS: 0.85, // Asia
-    OC: 0.6, // Oceania
-  }
 
   // Function to get color based on intensity (0-1)
   const getColor = (intensity) => {
@@ -364,32 +496,91 @@ function WorldMapWithSales({ zoom, setZoom }) {
 
 // ===== COMPONENT: Income Chart =====
 // Line chart showing income over time
-function IncomeChart() {
+function IncomeChart({ data, timeRange }) {
+  // Format data for the chart
+  const chartData = data && data.length > 0 ? data : []
+
+  // Find max value for scaling
+  const maxIncome = chartData.length > 0 ? Math.max(...chartData.map((item) => item.income)) : 10000
+
+  // Generate path for the chart
+  const generatePath = () => {
+    if (chartData.length === 0) return ""
+
+    // Scale points to fit the chart
+    const width = 800
+    const height = 200
+    const xStep = width / (chartData.length - 1 || 1)
+
+    // Start at the first point
+    let path = `M0,${height - (chartData[0].income / maxIncome) * height}`
+
+    // Add points with bezier curves
+    for (let i = 1; i < chartData.length; i++) {
+      const x = i * xStep
+      const y = height - (chartData[i].income / maxIncome) * height
+      const prevX = (i - 1) * xStep
+      const prevY = height - (chartData[i - 1].income / maxIncome) * height
+
+      // Control points for the curve
+      const cp1x = prevX + xStep / 3
+      const cp1y = prevY
+      const cp2x = x - xStep / 3
+      const cp2y = y
+
+      path += ` C${cp1x},${cp1y} ${cp2x},${cp2y} ${x},${y}`
+    }
+
+    return path
+  }
+
+  // Generate area path (same as line path but closed at the bottom)
+  const generateAreaPath = () => {
+    if (chartData.length === 0) return ""
+
+    const width = 800
+    const height = 200
+    const linePath = generatePath()
+
+    // Add line to bottom right, bottom left, then close
+    return `${linePath} L${width},${height} L0,${height} Z`
+  }
+
+  // Format x-axis labels based on time range
+  const getXAxisLabels = () => {
+    if (chartData.length === 0) return []
+
+    switch (timeRange) {
+      case "week":
+        // For week, show day names
+        return ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+      case "month":
+        // For month, show every 5th day
+        return Array.from({ length: 6 }, (_, i) => `${i * 5 + 1}`)
+      case "year":
+        // For year, show month abbreviations
+        return ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+      default:
+        return chartData.map((item) => item.period)
+    }
+  }
+
   return (
     <div className="h-48 relative">
       {/* Y-axis labels */}
       <div className="absolute left-0 top-0 h-full flex flex-col justify-between text-xs text-zinc-500">
-        <div>40k</div>
-        <div>30k</div>
-        <div>20k</div>
-        <div>10k</div>
+        <div>{Math.round(maxIncome).toLocaleString()}</div>
+        <div>{Math.round(maxIncome * 0.75).toLocaleString()}</div>
+        <div>{Math.round(maxIncome * 0.5).toLocaleString()}</div>
+        <div>{Math.round(maxIncome * 0.25).toLocaleString()}</div>
         <div>0</div>
       </div>
 
       {/* X-axis labels */}
       <div className="absolute bottom-0 left-10 right-0 flex justify-between text-xs text-zinc-500">
-        <div>Jan</div>
-        <div>Feb</div>
-        <div>Mar</div>
-        <div>Apr</div>
-        <div>May</div>
-        <div>Jul</div>
-        <div>Jun</div>
-        <div>Aug</div>
-        <div>Sep</div>
-        <div>Oct</div>
-        <div>Nov</div>
-        <div>Dec</div>
+        {getXAxisLabels().map((label, index) => (
+          <div key={index}>{label}</div>
+        ))}
       </div>
 
       {/* Chart SVG */}
@@ -402,17 +593,9 @@ function IncomeChart() {
             </linearGradient>
           </defs>
           {/* Area fill under the line */}
-          <path
-            d="M0,150 C50,140 100,160 150,140 C200,120 250,130 300,100 C350,70 400,90 450,80 C500,70 550,90 600,80 C650,70 700,90 750,70 L800,60 L800,200 L0,200 Z"
-            fill="url(#incomeGradient)"
-          />
+          <path d={generateAreaPath()} fill="url(#incomeGradient)" />
           {/* Line chart */}
-          <path
-            d="M0,150 C50,140 100,160 150,140 C200,120 250,130 300,100 C350,70 400,90 450,80 C500,70 550,90 600,80 C650,70 700,90 750,70 L800,60"
-            fill="none"
-            stroke="#e8443c"
-            strokeWidth="2"
-          />
+          <path d={generatePath()} fill="none" stroke="#e8443c" strokeWidth="2" />
         </svg>
       </div>
     </div>
@@ -421,53 +604,93 @@ function IncomeChart() {
 
 // ===== COMPONENT: Product Status List =====
 // Shows availability status for products
-function ProductStatusList() {
-  const products = [
-    { name: "2024 Dungeon Master's guide", status: "Available" },
-    { name: "2024 Player's Handbook Digital...", status: "Available" },
-    { name: "Quest from the infinity stairc...", status: "OOS" },
-    { name: "Vecna: Eve of Ruin Digital", status: "Available" },
-    { name: "D&D Campaign Case: Crea...", status: "OOS" },
-    { name: "D&D Expansion Gift Set Digit...", status: "OOS" },
-  ]
-
+function ProductStatusList({ products }) {
   return (
     <div className="space-y-3">
-      {products.map((product, index) => (
-        <div key={index} className="flex items-center justify-between">
-          <div className="text-sm truncate">{product.name}</div>
-          <div
-            className={`flex items-center gap-2 ${product.status === "Available" ? "text-green-500" : "text-red-500"}`}
-          >
-            <div className={`w-2 h-2 rounded-full ${product.status === "Available" ? "bg-green-500" : "bg-red-500"}`} />
-            <div className="text-xs">{product.status}</div>
+      {products.length === 0 ? (
+        <div className="text-center text-zinc-500 py-4">No products available</div>
+      ) : (
+        products.map((product) => (
+          <div key={product.id} className="flex items-center justify-between">
+            <div className="text-sm truncate">{product.name}</div>
+            <div
+              className={`flex items-center gap-2 ${
+                product.status === "Available" ? "text-green-500" : "text-red-500"
+              }`}
+            >
+              <div
+                className={`w-2 h-2 rounded-full ${product.status === "Available" ? "bg-green-500" : "bg-red-500"}`}
+              />
+              <div className="text-xs">{product.status}</div>
+            </div>
           </div>
-        </div>
-      ))}
+        ))
+      )}
     </div>
   )
 }
 
-// ===== COMPONENT: Miniatures Pie Chart =====
+// ===== COMPONENT: Categories Pie Chart =====
 // Circular chart showing product category breakdown
-function MiniaturesPieChart() {
+function CategoriesPieChart({ categories }) {
+  // Calculate total percentage for the pie chart
+  const totalPercentage = categories.reduce((sum, category) => sum + category.percentage, 0)
+
+  // Generate SVG paths for the pie chart
+  const generatePieSegments = () => {
+    if (categories.length === 0) return []
+
+    const segments = []
+    let cumulativePercentage = 0
+
+    categories.forEach((category, index) => {
+      // Calculate start and end angles
+      const startAngle = (cumulativePercentage / 100) * 2 * Math.PI - Math.PI / 2
+      cumulativePercentage += category.percentage
+      const endAngle = (cumulativePercentage / 100) * 2 * Math.PI - Math.PI / 2
+
+      // Calculate points on the circle
+      const startX = 50 + 45 * Math.cos(startAngle)
+      const startY = 50 + 45 * Math.sin(startAngle)
+      const endX = 50 + 45 * Math.cos(endAngle)
+      const endY = 50 + 45 * Math.sin(endAngle)
+
+      // Determine if the arc should be drawn as a large arc
+      const largeArcFlag = category.percentage > 50 ? 1 : 0
+
+      // Create SVG path
+      const path = `M 50 50 L ${startX} ${startY} A 45 45 0 ${largeArcFlag} 1 ${endX} ${endY} Z`
+
+      // Determine color based on index
+      let color
+      if (index === 0)
+        color = "#e8443c" // Primary category
+      else if (index === 1)
+        color = "#7f1d1d" // Secondary category
+      else if (index === 2)
+        color = "#f87171" // Tertiary category
+      else color = "#450a0a" // Other categories
+
+      segments.push({ path, color })
+    })
+
+    return segments
+  }
+
+  const pieSegments = generatePieSegments()
+
   return (
     <svg className="w-full h-full" viewBox="0 0 100 100">
       {/* Background circle */}
       <circle cx="50" cy="50" r="45" fill="transparent" stroke="#4a1a1a" strokeWidth="10" />
 
-      {/* Progress arc (55%) */}
-      <circle
-        cx="50"
-        cy="50"
-        r="45"
-        fill="transparent"
-        stroke="#e8443c"
-        strokeWidth="10"
-        strokeDasharray="282.6"
-        strokeDashoffset="127.17" // 55% of 282.6 = 155.43, so 282.6 - 155.43 = 127.17
-        transform="rotate(-90 50 50)"
-      />
+      {/* Pie segments */}
+      {pieSegments.map((segment, index) => (
+        <path key={index} d={segment.path} fill={segment.color} stroke="transparent" />
+      ))}
+
+      {/* Center circle for better aesthetics */}
+      <circle cx="50" cy="50" r="25" fill="#161616" />
     </svg>
   )
 }

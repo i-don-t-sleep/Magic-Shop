@@ -9,20 +9,9 @@ export async function GET(req: NextRequest) {
 
     /* ---------- 2) ดึงค่า ENUM ของ category ---------- */
     const [catRows] = await db.query<RowDataPacket[]>(
-      `SHOW COLUMNS FROM products LIKE 'category'`,
+      `SELECT name FROM categories ORDER BY sort_order`,
     )
-
-    let categoryEnum: string[] = []
-    if (catRows.length) {
-      // รูปแบบที่ MySQL ส่งกลับ:  enum('A','B','C')
-      const enumStr = catRows[0].Type as string
-      const m = enumStr.match(/^enum\((.*)\)$/)
-      if (m) {
-        categoryEnum = m[1]
-          .split(",")
-          .map((v) => v.replace(/'/g, "").trim())
-      }
-    }
+    const categoryEnum = catRows.map((r) => r.name as string)
 
     /* ---------- 3) ดึงค่า ENUM ของ status ---------- */
     const [statRows] = await db.query<RowDataPacket[]>(

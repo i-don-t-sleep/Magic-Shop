@@ -45,6 +45,8 @@ npm i @radix-ui/react-scroll-area
 
 npm install @heroui/tabs
 
+npm install @radix-ui/react-tabs
+
 ##Some mySQL adjustment
 
 -- สร้างตาราง notifications

@@ -47,7 +47,6 @@ export function ProductCard({ name, price, quantity, primaryImage, href }: Produ
       const response = await fetch(`/api/products/edit/${productId}`, {
         method: "DELETE",
       })
-
       if (response.ok) {
         showSuccessToast("Product deleted successfully")
         // Refresh the page or update the product list
@@ -104,15 +103,15 @@ export function ProductCard({ name, price, quantity, primaryImage, href }: Produ
                   <Eye className="mr-2 h-4 w-4" />
                   See Detail
                 </DropdownMenuItem>
-                <DropdownMenuItem
+              {/*  <DropdownMenuItem
                   onClick={() => router.push(`/SuperAdmins/products/history/${productId}`)}
                   className="cursor-pointer"
                 >
                   <History className="mr-2 h-4 w-4" />
                   See History
-                </DropdownMenuItem>
+                </DropdownMenuItem> */}
                 <DropdownMenuItem
-                  onClick={() => router.push(`/SuperAdmins/products/edit/${href}`)}
+                  onClick={() => router.push(`/SuperAdmins/products/edit/${productId}`)}
                   className="cursor-pointer"
                 >
                   <Edit className="mr-2 h-4 w-4" />

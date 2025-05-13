@@ -63,10 +63,11 @@ export default function ProductsPage() {
   const [categoryEnum, setCategoryEnum] = useState<string[]>([])
   const [statusEnum, setStatusEnum] = useState<string[]>([])
   const [publisherNames, setPublisherNames] = useState<string[]>([])
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000])
-  const [quantityRange, setQuantityRange] = useState<[number, number]>([0, 100])
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, -1])
+  const [quantityRange, setQuantityRange] = useState<[number, number]>([0, -1])
   const [maxPriceValue, setMaxPriceValue] = useState(1000)
   const [maxQuantityValue, setMaxQuantityValue] = useState(100)
+  const [defaultSort, setdefaultSort] = useState("id-desc")
   const [BINS, setBINS] = useState(80)
 
   // Selected filter tags
@@ -91,55 +92,40 @@ export default function ProductsPage() {
 
   // Create a unified list of all filter options
   const allFilterOptions = useMemo(() => {
-    return [
-      // Category options
-      ...categoryEnum.map((category) => ({
-        value: `category:${category}`,
-        label: category,
-        type: "category",
-        typeLabel: "Category",
-        color: "#4f46e5", // Indigo color for categories
-      })),
+  const sortOptions = [
+    { value: "sort:price-asc", label: "Price: Low to High", type: "sort", typeLabel: "Sort By", color: "#be123c" },
+    { value: "sort:price-desc", label: "Price: High to Low", type: "sort", typeLabel: "Sort By", color: "#be123c" },
+    { value: "sort:quantity-asc", label: "Quantity: Low to High", type: "sort", typeLabel: "Sort By", color: "#be123c" },
+    { value: "sort:quantity-desc", label: "Quantity: High to Low", type: "sort", typeLabel: "Sort By", color: "#be123c" },
+    { value: "sort:id-desc", label: "Newest First", type: "sort", typeLabel: "Sort By", color: "#be123c" },
+    { value: "sort:id-asc", label: "Oldest First", type: "sort", typeLabel: "Sort By", color: "#be123c" },
+  ].filter(option => option.value !== `sort:${defaultSort}`)  // ลบตัวที่ตรงกับ defaultSort
 
-      // Publisher options
-      ...publisherNames.map((publisher) => ({
-        value: `publisher:${publisher}`,
-        label: publisher,
-        type: "publisher",
-        typeLabel: "Publisher",
-        color: "#0891b2", // Cyan color for publishers
-      })),
-
-      // Status options
-      ...statusEnum.map((status) => ({
-        value: `status:${status}`,
-        label: status,
-        type: "status",
-        typeLabel: "Status",
-        color: "#059669", // Green color for statuses
-      })),
-
-      // Sort options
-      { value: "sort:price-asc", label: "Price: Low to High", type: "sort", typeLabel: "Sort By", color: "#be123c" },
-      { value: "sort:price-desc", label: "Price: High to Low", type: "sort", typeLabel: "Sort By", color: "#be123c" },
-      {
-        value: "sort:quantity-asc",
-        label: "Quantity: Low to High",
-        type: "sort",
-        typeLabel: "Sort By",
-        color: "#be123c",
-      },
-      {
-        value: "sort:quantity-desc",
-        label: "Quantity: High to Low",
-        type: "sort",
-        typeLabel: "Sort By",
-        color: "#be123c",
-      },
-      { value: "sort:id-desc", label: "Newest First", type: "sort", typeLabel: "Sort By", color: "#be123c" },
-      { value: "sort:id-asc", label: "Oldest First", type: "sort", typeLabel: "Sort By", color: "#be123c" },
-    ] as TagItem[]
-  }, [categoryEnum, publisherNames, statusEnum])
+  return [
+    ...categoryEnum.map((category) => ({
+      value: `category:${category}`,
+      label: category,
+      type: "category",
+      typeLabel: "Category",
+      color: "#4f46e5",
+    })),
+    ...publisherNames.map((publisher) => ({
+      value: `publisher:${publisher}`,
+      label: publisher,
+      type: "publisher",
+      typeLabel: "Publisher",
+      color: "#0891b2",
+    })),
+    ...statusEnum.map((status) => ({
+      value: `status:${status}`,
+      label: status,
+      type: "status",
+      typeLabel: "Status",
+      color: "#059669",
+    })),
+    ...sortOptions, // รวมที่เหลือ
+  ] as TagItem[]
+}, [categoryEnum, publisherNames, statusEnum, defaultSort])
 
   // Helper function to extract filter values from tags
   const extractFiltersFromTags = (tags: string[]): FilterState => {
@@ -147,11 +133,11 @@ export default function ProductsPage() {
       categories: [],
       publishers: [],
       minPrice: "0.00",
-      maxPrice: "1000.00",
+      maxPrice: "",
       minQuantity: "0",
-      maxQuantity: "1000",
+      maxQuantity: "",
       statuses: [],
-      sort: "price-asc", // Default sort
+      sort: defaultSort, // Default sort
     }
 
     tags.forEach((tag) => {
@@ -279,6 +265,7 @@ export default function ProductsPage() {
   const fetchMetadata = async () => {
     const res = await fetch("/api/products/meta")
     const data = await res.json()
+
     if (data.success) {
       setCategoryEnum(data.categoryEnum)
       setStatusEnum(data.statusEnum)
@@ -298,10 +285,9 @@ export default function ProductsPage() {
 
   const fetchHistograms = async () => {
     setLoadingHistograms(true)
-    const bins = 80
     try {
       // Fetch price histogram
-      const priceRes = await fetch(`/api/products/histogram?field=price&bins=${bins}`)
+      const priceRes = await fetch(`/api/products/histogram?field=price&bins=${BINS}`)
       const priceData = await priceRes.json()
 
       if (priceData.success) {
@@ -311,7 +297,7 @@ export default function ProductsPage() {
       }
 
       // Fetch quantity histogram
-      const quantityRes = await fetch(`/api/products/histogram?field=quantity&bins=${bins}`)
+      const quantityRes = await fetch(`/api/products/histogram?field=quantity&bins=${BINS}`)
       const quantityData = await quantityRes.json()
 
       if (quantityData.success) {
@@ -340,7 +326,7 @@ export default function ProductsPage() {
     minQuantity: "",
     maxQuantity: "",
     statuses: [],
-    sort: "price-asc",
+    sort: "id-desc",
   })
 
   // Update filters when selected tags change
@@ -443,7 +429,7 @@ export default function ProductsPage() {
 
       const response = await fetch(`/api/products?${queryParams.toString()}`)
       const data = await response.json()
-
+      console.log(data)
       setProducts(data.data)
       setTotalRecords(data.total)
     } catch (error) {

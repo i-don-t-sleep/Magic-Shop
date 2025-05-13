@@ -36,7 +36,7 @@ export function ShippingCard({ item }: { item: ShippingItem }) {
               {/* Product Image */}
               <div className="w-24 h-24 relative">
                 <Image
-                  src={`/api/image?path=products/${item.productImage}`}
+                  src={`${item.productImage}`}
                   alt="Product"
                   width={96}
                   height={96}
@@ -49,7 +49,7 @@ export function ShippingCard({ item }: { item: ShippingItem }) {
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full overflow-hidden">
                     <Image
-                      src={`/api/image?path=users/${item.client.avatar}`}
+                      src={`${item.client.avatar}`}
                       alt={item.client.name}
                       width={40}
                       height={40}

@@ -1,7 +1,9 @@
 /* ---------------- SuggestSearchSpan.tsx ---------------- */
 "use client"
 
-import { Fragment, useRef, useState, useEffect, Dispatch, SetStateAction } from "react"
+import type React from "react"
+
+import { Fragment, useRef, useState, useEffect, type Dispatch, type SetStateAction } from "react"
 import { Combobox, Transition } from "@headlessui/react"
 import { Search, Check } from "lucide-react"
 import { Input } from "@/components/ui/input"
@@ -18,7 +20,7 @@ export interface SuggestSearchSpanProps<T extends ComboboxItem> {
   setValue: Dispatch<SetStateAction<string>>
   placeholder?: string
   className?: string
-  /** จำนวนรายการที่แสดงได้สูงสุดก่อนเลื่อนสกอร์ล (default = 3) */
+  /** จำนวนรายการที่แสดงได้สูงสุดก่อนเลื���อนสกอร์ล (default = 3) */
   maxVisible?: number
   /** เปิด/ปิด suggestion dropdown (default = true) */
   enableSuggest?: boolean

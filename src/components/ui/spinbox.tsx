@@ -69,17 +69,50 @@ const Spinbox = forwardRef(
     }
 
     const commit = (valStr: string) => {
-      // escape ให้ \\d กับ \\. เพื่อให้ได้ \d กับ \. ใน regex จริง
-      const regex = new RegExp(`^-?\\d+(?:\\.\\d{1,${decimalPoint}})?$`);
-      console.log(regex, valStr, regex.test(valStr.trim()));
+      const trimmed = valStr.trim();
     
-      if (regex.test(valStr.trim())) {
-        const parsed = parseFloat(valStr);
-        onChange(formatValue(parsed));
+      // กรณี integer-only เมื่อ decimalPoint = 0
+      if (decimalPoint === 0) {
+        const intRegex = /^-?\d+$/;
+        if (intRegex.test(trimmed)) {
+          // ถ้าเป็น integer ล้วน
+          const parsed = parseInt(trimmed, 10);
+          const clamped = formatValue(parsed);      // จะ clamp กับ min/max
+          onChange(clamped);
+          setLocal(String(clamped));                // แสดงค่าใหม่ที่ clamp แล้ว
+        } else {
+          // ถ้าไม่ใช่ integer valid ก็ revert กลับ
+          setLocal(String(Math.trunc(value)));
+        }
+        return;
+      }
+    
+      // กรณีมีทศนิยม (decimalPoint > 0)
+      const validRegex = new RegExp(`^-?\\d+(?:\\.\\d{1,${decimalPoint}})?$`);
+      if (validRegex.test(trimmed)) {
+        // ตรงตามรูปแบบ ทศนิยมไม่เกิน
+        const parsed = parseFloat(trimmed);
+        const formatted = formatValue(parsed);
+        onChange(formatted);
+        setLocal(formatted.toFixed(decimalPoint));
       } else {
-        setLocal(value.toFixed(decimalPoint));
+        // อาจเป็นเลข แต่ทศนิยมเกิน หรือตัวหนังสือปน
+        const parsed = parseFloat(trimmed);
+        const hasDot = trimmed.includes('.');
+        const decimalPart = hasDot ? trimmed.split('.')[1] ?? '' : '';
+        if (!isNaN(parsed) && hasDot && decimalPart.length > decimalPoint) {
+          // คำนวณปัด/เติมทศนิยมให้พอดี
+          const rounded = parseFloat(parsed.toFixed(decimalPoint));
+          const formatted = formatValue(rounded);
+          onChange(formatted);
+          setLocal(formatted.toFixed(decimalPoint));
+        } else {
+          // คืนค่าเดิม
+          setLocal(value.toFixed(decimalPoint));
+        }
       }
     };
+    
 
     const handleIncrement = () => {
       if (disabled) return
@@ -132,7 +165,7 @@ const Spinbox = forwardRef(
       >
         <input
           ref={inputRef}
-          type="text"
+          type="number"
           inputMode="decimal"
           value={local}
           /*onWheel={handleWheel}*/

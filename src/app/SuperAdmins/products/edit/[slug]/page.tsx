@@ -1,12 +1,19 @@
 "use client"
 
-import { useState, useRef, useEffect, type FormEvent, type ChangeEvent } from "react"
-import { useParams, useRouter } from "next/navigation"
-import { ArrowLeft, Upload, X, Plus, Trash } from "lucide-react"
+import type React from "react"
+
+import { useEffect } from "react"
+import { useState, useRef, type FormEvent, type ChangeEvent } from "react"
+import { useRouter, useParams } from "next/navigation"
+import { ArrowLeft, Upload, X, Plus, Settings, Trash, Save } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { showSuccessToast, showErrorToast, showLoadingToast } from "@/components/notify/Toast"
 import Image from "next/image"
+import { Spinbox } from "@/components/ui/spinbox"
+import ComboSearch from "@/components/newcomp/comboboxfixed"
+import { showErrorToast, showSuccessToast } from "@/components/notify/Toast"
+import { ManageCategoriesModal } from "@/components/manage-categories-modal"
+import { ManageWarehousesModal } from "@/components/manage-warehouses-modal"
 import { LoadingComp } from "@/components/loading-comp"
 
 interface Publisher {
@@ -21,7 +28,19 @@ interface ProductImage {
   id: number
   name: string
   description: string
-  url: string
+  url?: string
+}
+
+interface Warehouse {
+  id: number
+  location: string
+  capacity: number
+}
+
+interface ImageWithDescription {
+  file: File
+  previewUrl: string
+  description: string
 }
 
 interface ProductData {
@@ -30,154 +49,242 @@ interface ProductData {
   description: string
   price: number
   quantity: number
-  category: string
   status: string
-  publisherID: number
+  category: string
   publisherName: string
-  warehouseLocation: string | null
+  publisherId: number
   images: ProductImage[]
+  warehouse: Warehouse | null
 }
 
 export default function EditProductPage() {
   const router = useRouter()
   const { slug } = useParams() as { slug: string }
-
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [publishers, setPublishers] = useState<Publisher[]>([])
-  const [product, setProduct] = useState<ProductData | null>(null)
 
-  const [selectedImages, setSelectedImages] = useState<File[]>([])
-  const [imagePreviewUrls, setImagePreviewUrls] = useState<string[]>([])
+  // Product data
+  const [productData, setProductData] = useState<ProductData | null>(null)
+  const [productName, setProductName] = useState("")
+  const [productDescription, setProductDescription] = useState("")
+  const [productPrice, setProductPrice] = useState("")
+
+  // Category and publisher
+  const [categoryItems, setCategoryItems] = useState<{ name: string }[]>([])
+  const [selectedCategoryItem, setSelectedCategoryItem] = useState<string>("")
+  const [publisherItems, setPublisherItems] = useState<{ name: string }[]>([])
+  const [selectedPublisherItem, setSelectedPublisherItem] = useState<string>("")
+
+  // Warehouse
+  const [availableWarehouses, setAvailableWarehouses] = useState<Array<{ location: string; capacity: number }>>([])
+  const [selectedWarehouse, setSelectedWarehouse] = useState<{ location: string; capacity: number } | null>(null)
+
+  // Images
+  const [existingImages, setExistingImages] = useState<ProductImage[]>([])
   const [imagesToDelete, setImagesToDelete] = useState<number[]>([])
-
+  const [newImages, setNewImages] = useState<ImageWithDescription[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // Extract product ID from slug
-  const productId = decodeURIComponent(slug).split("&pid=")[1]?.split("&")[0]
+  // Modals
+  const [manageCategoriesModalOpen, setManageCategoriesModalOpen] = useState(false)
+  const [manageWarehousesModalOpen, setManageWarehousesModalOpen] = useState(false)
 
-  // Fetch product data and publishers on component mount
+  // Fetch product data and metadata
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchProductData = async () => {
       setIsLoading(true)
       setError(null)
 
       try {
-        // Fetch publishers
-        const publishersResponse = await fetch("/api/publishers")
-        const publishersData = await publishersResponse.json()
-
-        if (publishersData.success) {
-          setPublishers(publishersData.publishers)
-        } else {
-          throw new Error("Failed to load publishers")
-        }
-        // Fetch product data
-        if (!productId) {
-          throw new Error("Invalid product ID")
+        // Fetch product details
+        const response = await fetch(`/api/products/edit/`+slug)
+        if (!response.ok) {
+          throw new Error(`Failed to fetch product: ${response.statusText}`)
         }
 
-        const productResponse = await fetch(`/api/products/edit/${productId}`)
+        const data = await response.json()
 
-        if (!productResponse.ok) {
-          throw new Error(`Failed to load product: ${productResponse.statusText}`)
+        if (!data.success) {
+          throw new Error(data.message || "Failed to fetch product details")
         }
 
-        const productData = await productResponse.json()
+        const product = data.product
 
-        if (productData.success) {
-          setProduct(productData.product)
-        } else {
-          throw new Error(productData.message || "Failed to load product")
+        // Set product data
+        setProductData(product)
+        setProductName(product.name)
+        setProductDescription(product.description || "")
+        setProductPrice(product.price.toString())
+        setSelectedCategoryItem(product.category)
+        setSelectedPublisherItem(product.publisherName)
+
+        // Set warehouse data if exists
+        if (product.warehouse) {
+          setSelectedWarehouse({
+            location: product.warehouse.location,
+            capacity: product.warehouse.capacity,
+          })
         }
+
+        // Set images with URLs
+        const images = product.images.map((img: any) => ({
+          ...img,
+          url: `/api/blob/productimages/${img.id}`,
+        }))
+        setExistingImages(images)
+
+        // Fetch metadata (categories, publishers, warehouses)
+        await fetchMetadata()
       } catch (error: any) {
-        console.error("Error loading data:", error)
-        setError(error.message || "An error occurred while loading data")
+        console.error("Error fetching product:", error)
+        setError(error.message || "Failed to load product data")
       } finally {
         setIsLoading(false)
       }
     }
 
-    fetchData()
-  }, [productId])
+    fetchProductData()
+  }, [slug])
 
-  const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      const newFiles = Array.from(e.target.files)
+  const fetchMetadata = async () => {
+    try {
+      const res = await fetch("/api/products/movement/meta")
+      const data = await res.json()
 
-      // Create preview URLs for the new images
-      const newPreviewUrls = newFiles.map((file) => URL.createObjectURL(file))
+      if (data.success) {
+        // Format category data for ComboSearch
+        const formattedCategories = Array.isArray(data.categoryEnum)
+          ? data.categoryEnum.map((cat: any) => (typeof cat === "string" ? { name: cat } : cat))
+          : []
+        setCategoryItems(formattedCategories)
 
-      setSelectedImages((prev) => [...prev, ...newFiles])
-      setImagePreviewUrls((prev) => [...prev, ...newPreviewUrls])
+        // Format publisher data for ComboSearch
+        const formattedPublishers = Array.isArray(data.publishers)
+          ? data.publishers.map((cat: any) => (typeof cat === "string" ? { name: cat } : cat))
+          : []
+        setPublisherItems(formattedPublishers)
+
+        // Store available warehouses
+        setAvailableWarehouses(data.availableWarehouses || [])
+      } else {
+        console.error("Failed to fetch metadata:", data.error || "Unknown error")
+      }
+    } catch (error) {
+      console.error("Error fetching metadata:", error)
     }
   }
 
-  const removeNewImage = (index: number) => {
-    // Revoke the object URL to avoid memory leaks
-    URL.revokeObjectURL(imagePreviewUrls[index])
+  const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files || files.length === 0) return
 
-    setSelectedImages((prev) => prev.filter((_, i) => i !== index))
-    setImagePreviewUrls((prev) => prev.filter((_, i) => i !== index))
-  }
+    const newUploadedImages: ImageWithDescription[] = []
 
-  const toggleDeleteExistingImage = (imageId: number) => {
-    setImagesToDelete((prev) => {
-      if (prev.includes(imageId)) {
-        return prev.filter((id) => id !== imageId)
-      } else {
-        return [...prev, imageId]
+    Array.from(files).forEach((file) => {
+      if (file.type.startsWith("image/")) {
+        newUploadedImages.push({
+          file,
+          previewUrl: URL.createObjectURL(file),
+          description: "",
+        })
       }
     })
+
+    setNewImages((prev) => [...prev, ...newUploadedImages])
+  }
+
+  const updateNewImageDescription = (index: number, description: string) => {
+    setNewImages((prev) => prev.map((img, i) => (i === index ? { ...img, description } : img)))
+  }
+
+  const updateExistingImageDescription = (id: number, description: string) => {
+    setExistingImages((prev) => prev.map((img) => (img.id === id ? { ...img, description } : img)))
+  }
+
+  const removeNewImage = (index: number) => {
+    setNewImages((prev) => {
+      const newImages = [...prev]
+      // Revoke the object URL to avoid memory leaks
+      URL.revokeObjectURL(newImages[index].previewUrl)
+      newImages.splice(index, 1)
+      return newImages
+    })
+  }
+
+  const markExistingImageForDeletion = (id: number) => {
+    setImagesToDelete((prev) => [...prev, id])
+  }
+
+  const unmarkExistingImageForDeletion = (id: number) => {
+    setImagesToDelete((prev) => prev.filter((imgId) => imgId !== id))
+  }
+
+  const isImageMarkedForDeletion = (id: number) => {
+    return imagesToDelete.includes(id)
   }
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
 
-    if (isSubmitting || !product) return
-
-    const form = e.currentTarget
-    const formData = new FormData(form)
-
-    // Add all selected images to formData
-    formData.delete("images") // Remove any existing image field
-    selectedImages.forEach((image) => {
-      formData.append("images", image)
-    })
-
-    // Add images to delete
-    formData.delete("deleteImages") // Remove any existing deleteImages field
-    imagesToDelete.forEach((imageId) => {
-      formData.append("deleteImages", imageId.toString())
-    })
+    if (isSubmitting) return
 
     // Validate form
-    const name = formData.get("name") as string
-    const price = formData.get("price") as string
-    const quantity = formData.get("quantity") as string
-    const publisherId = formData.get("publisherId") as string
-
-    if (!name || !price || !quantity || !publisherId) {
+    if (!productName || !selectedCategoryItem || !selectedPublisherItem) {
       showErrorToast("Please fill in all required fields")
       return
     }
 
-    // Check if product will have at least one image after update
-    const currentImageCount = product.images.length
-    const imagesToDeleteCount = imagesToDelete.length
-    const newImagesCount = selectedImages.length
-
-    if (currentImageCount - imagesToDeleteCount + newImagesCount === 0) {
-      showErrorToast("Product must have at least one image")
+    if (Number(productPrice) <= 0) {
+      showErrorToast("Price must be greater than 0")
       return
     }
 
-    try {
-      setIsSubmitting(true)
-      showLoadingToast("Updating product...")
+    setIsSubmitting(true)
 
-      const response = await fetch(`/api/products/edit/${productId}`, {
+    try {
+      const formData = new FormData()
+
+      // Add product data
+      formData.append("name", productName)
+      formData.append("description", productDescription)
+      formData.append("price", productPrice)
+      formData.append("category", selectedCategoryItem)
+      formData.append("publisherName", selectedPublisherItem)
+
+      // Add warehouse data if selected
+      if (selectedWarehouse) {
+        formData.append("warehouseLocation", selectedWarehouse.location)
+        formData.append("warehouseCapacity", selectedWarehouse.capacity.toString())
+      }
+
+      // Add images to delete
+      if (imagesToDelete.length > 0) {
+        formData.append("deleteImages", JSON.stringify(imagesToDelete))
+      }
+
+      // Add existing image descriptions
+      existingImages.forEach((img) => {
+        if (!isImageMarkedForDeletion(img.id)) {
+          formData.append(`imageDescription${img.id}`, img.description)
+        }
+      })
+
+      // Add new images
+      newImages.forEach((img, index) => {
+        formData.append(`newImage${index}`, img.file)
+        formData.append(`newImageDescription${index}`, img.description)
+      })
+
+      if (!productData) {
+        showErrorToast("Product data not loaded")
+        return
+      }
+      // Add productId
+      formData.append("productId", productData.id.toString())
+
+      // Submit update
+      const response = await fetch(`/api/products/edit/`+slug, {
         method: "PUT",
         body: formData,
       })
@@ -198,6 +305,35 @@ export default function EditProductPage() {
     }
   }
 
+  // Handle category updates
+  const handleCategoriesUpdated = async () => {
+    try {
+      const response = await fetch("/api/products/categories")
+      const data = await response.json()
+
+      if (data.success) {
+        const formattedCategories = data.categories.map((cat: string) => ({ name: cat }))
+        setCategoryItems(formattedCategories)
+      }
+    } catch (error) {
+      console.error("Error fetching updated categories:", error)
+    }
+  }
+
+  // Handle warehouse updates
+  const handleWarehousesUpdated = async () => {
+    try {
+      const response = await fetch("/api/warehouse")
+      const data = await response.json()
+
+      if (data.success) {
+        setAvailableWarehouses(data.warehouses || [])
+      }
+    } catch (error) {
+      console.error("Error fetching updated warehouses:", error)
+    }
+  }
+
   if (isLoading) {
     return <LoadingComp />
   }
@@ -205,23 +341,19 @@ export default function EditProductPage() {
   if (error) {
     return (
       <div className="pt-3 flex flex-col h-full overflow-hidden">
-        <div className="px-6 pb-6 flex items-center justify-center h-full">
-          <div className="text-center">
-            <h2 className="text-xl text-red-500 mb-4">Error</h2>
-            <p className="text-zinc-400 mb-4">{error}</p>
-            <Button onClick={() => router.back()}>Go Back</Button>
-          </div>
+        <div className="px-6 pb-3 flex justify-between items-center">
+          <button
+            onClick={() => router.back()}
+            className="inline-flex items-center text-zinc-400 hover:text-white transition-colors"
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Products
+          </button>
         </div>
-      </div>
-    )
-  }
-
-  if (!product) {
-    return (
-      <div className="pt-3 flex flex-col h-full overflow-hidden">
-        <div className="px-6 pb-6 flex items-center justify-center h-full">
+        <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
-            <h2 className="text-xl text-red-500 mb-4">Product Not Found</h2>
+            <h2 className="text-xl font-semibold text-red-500 mb-4">Error Loading Product</h2>
+            <p className="text-zinc-400 mb-6">{error}</p>
             <Button onClick={() => router.back()}>Go Back</Button>
           </div>
         </div>
@@ -248,7 +380,6 @@ export default function EditProductPage() {
           <div className="p-[1px] bg-gradient-to-t from-magic-iron-1 from-20% to-magic-iron-2 to-80% rounded-[18px] overflow-hidden">
             <div className="p-6">
               <form onSubmit={handleSubmit} className="space-y-6">
-                {/* Product Details Section */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-4">
                     <div>
@@ -257,11 +388,10 @@ export default function EditProductPage() {
                       </label>
                       <Input
                         id="name"
-                        name="name"
+                        value={productName}
+                        onChange={(e) => setProductName(e.target.value)}
                         placeholder="Enter product name"
                         className="bg-zinc-900 border-zinc-700"
-                        defaultValue={product.name}
-                        required
                       />
                     </div>
 
@@ -271,163 +401,149 @@ export default function EditProductPage() {
                       </label>
                       <textarea
                         id="description"
-                        name="description"
+                        value={productDescription}
+                        onChange={(e) => setProductDescription(e.target.value)}
                         rows={4}
                         placeholder="Enter product description"
-                        className="w-full rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm"
-                        defaultValue={product.description || ""}
+                        className="w-full rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm max-h-[81vh]"
                       />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label htmlFor="price" className="block text-sm font-medium mb-1">
-                          Price <span className="text-red-500">*</span>
-                        </label>
-                        <div className="relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2">$</span>
-                          <Input
-                            id="price"
-                            name="price"
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            placeholder="0.00"
-                            className="bg-zinc-900 border-zinc-700 pl-8"
-                            defaultValue={product.price}
-                            required
-                          />
-                        </div>
-                      </div>
-
-                      <div>
-                        <label htmlFor="quantity" className="block text-sm font-medium mb-1">
-                          Quantity <span className="text-red-500">*</span>
-                        </label>
-                        <Input
-                          id="quantity"
-                          name="quantity"
-                          type="number"
-                          min="0"
-                          placeholder="0"
-                          className="bg-zinc-900 border-zinc-700"
-                          defaultValue={product.quantity}
-                          required
+                    <div>
+                      <label htmlFor="price" className="block text-sm font-medium mb-1">
+                        Price <span className="text-red-500">*</span>
+                      </label>
+                      <div className="flex items-center">
+                        <span className="mr-2">$</span>
+                        <Spinbox
+                          value={Number(productPrice) || 0}
+                          onChange={(value) => setProductPrice(value.toString())}
+                          min={0}
+                          max={10000000.99}
+                          step={1}
+                          decimalPoint={2}
+                          className="w-full"
                         />
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label htmlFor="category" className="block text-sm font-medium mb-1">
+                    <div>
+                      <div className="flex justify-between items-center mb-1">
+                        <label htmlFor="category" className="block text-sm font-medium">
                           Category <span className="text-red-500">*</span>
                         </label>
-                        <select
-                          id="category"
-                          name="category"
-                          className="w-full rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm"
-                          defaultValue={product.category}
-                          required
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="h-7 px-2 text-xs border-zinc-700 hover:bg-red-600 hover:text-white"
+                          onClick={() => setManageCategoriesModalOpen(true)}
                         >
-                          <option value="">Select category</option>
-                          <option value="Rulebook">Rulebook</option>
-                          <option value="Miniature">Miniature</option>
-                          <option value="Dice">Dice</option>
-                          <option value="Game Aid">Game Aid</option>
-                          <option value="Digital Content">Digital Content</option>
-                          <option value="Merchandise">Merchandise</option>
-                          <option value="Custom Content">Custom Content</option>
-                          <option value="etc...">Other</option>
-                        </select>
+                          <Settings className="h-3 w-3 mr-1" /> Manage Categories
+                        </Button>
                       </div>
 
-                      <div>
-                        <label htmlFor="publisherId" className="block text-sm font-medium mb-1">
+                      <ComboSearch
+                        items={categoryItems}
+                        value={selectedCategoryItem}
+                        setValue={setSelectedCategoryItem}
+                        placeholder="Select category..."
+                        className="w-full"
+                      />
+                    </div>
+
+                    <div>
+                      <div className="flex justify-between items-center mb-1">
+                        <label htmlFor="publisherId" className="block text-sm font-medium">
                           Publisher <span className="text-red-500">*</span>
                         </label>
-                        <select
-                          id="publisherId"
-                          name="publisherId"
-                          className="w-full rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm"
-                          defaultValue={product.publisherID}
-                          required
-                        >
-                          <option value="">Select publisher</option>
-                          {publishers.map((publisher) => (
-                            <option key={publisher.id} value={publisher.id}>
-                              {publisher.name}
-                              {publisher.servicesFee ? ` (Fee: ${publisher.servicesFee}%)` : ""}
-                            </option>
-                          ))}
-                        </select>
                       </div>
-                    </div>
-
-                    {/* Warehouse Section */}
-                    <div>
-                      <label htmlFor="warehouseLocation" className="block text-sm font-medium mb-1">
-                        Warehouse Location
-                      </label>
-                      <Input
-                        id="warehouseLocation"
-                        name="warehouseLocation"
-                        placeholder="zone-rack-shelf-pallet (e.g. A-01-02-03)"
-                        className="bg-zinc-900 border-zinc-700"
-                        defaultValue={product.warehouseLocation || ""}
+                      <ComboSearch
+                        items={publisherItems}
+                        value={selectedPublisherItem}
+                        setValue={setSelectedPublisherItem}
+                        placeholder="Select publisher..."
+                        className="w-full"
                       />
-                      <p className="text-xs text-zinc-500 mt-1">
-                        Format: zone-rack-shelf-pallet. Leave empty if not storing in warehouse.
-                      </p>
                     </div>
-                  </div>
 
-                  {/* Image Upload Section */}
-                  <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium mb-1">
-                        Product Images <span className="text-red-500">*</span>
-                      </label>
+                      <div className="flex justify-between items-center mb-1">
+                        <label htmlFor="warehouseLocation" className="block text-sm font-medium">
+                          Warehouse Location
+                        </label>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="h-7 px-2 text-xs border-zinc-700 hover:bg-red-600 hover:text-white"
+                          onClick={() => setManageWarehousesModalOpen(true)}
+                        >
+                          <Settings className="h-3 w-3 mr-1" /> Manage Warehouses
+                        </Button>
+                      </div>
+                      <ComboSearch
+                        items={availableWarehouses.map((w) => ({
+                          name: `${w.location} (Capacity: ${w.capacity})`,
+                        }))}
+                        value={
+                          selectedWarehouse?.location != null && selectedWarehouse?.capacity != null
+                            ? `${selectedWarehouse.location}`
+                            : ""
+                        }
+                        setValue={(valueAction: React.SetStateAction<string>) => {
+                          // 1) Get the full selected string
+                          const fullName =
+                            typeof valueAction === "function"
+                              ? (valueAction as (prev: string) => string)(
+                                  selectedWarehouse ? `${selectedWarehouse.location}` : "",
+                                )
+                              : valueAction
+                          // 2) Extract just the location before " ("
+                          const match = fullName.match(/^(.+?)\s*\(/)
+                          const locOnly = match ? match[1] : fullName
 
-                      {/* Existing Images */}
-                      {product.images.length > 0 && (
-                        <div className="space-y-2 mb-4">
-                          <label className="block text-sm font-medium">Current Images ({product.images.length})</label>
+                          // 3) Find the warehouse object using locOnly
+                          const found = availableWarehouses.find((w) => w.location === locOnly) ?? null
+                          // 4) Set state
+                          setSelectedWarehouse(found)
+                        }}
+                        placeholder="Select available warehouse..."
+                        className="w-full"
+                      />
+                      <p className="text-xs text-zinc-500 mt-1">Format: zone-rack-shelf-pallet. (Ex: AA-03-04-700)</p>
+                    </div>
 
-                          <div className="grid grid-cols-3 gap-3">
-                            {product.images.map((image) => (
-                              <div key={image.id} className="relative group">
-                                <div
-                                  className={`aspect-square relative rounded-md overflow-hidden border ${
-                                    imagesToDelete.includes(image.id) ? "border-red-600 opacity-50" : "border-zinc-700"
-                                  }`}
-                                >
-                                  <Image
-                                    src={image.url || "/placeholder.svg"}
-                                    alt={image.name}
-                                    fill
-                                    className="object-cover"
-                                  />
-                                </div>
-                                <button
-                                  type="button"
-                                  className={`absolute top-1 right-1 ${
-                                    imagesToDelete.includes(image.id) ? "bg-zinc-800" : "bg-red-600"
-                                  } rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity`}
-                                  onClick={() => toggleDeleteExistingImage(image.id)}
-                                >
-                                  {imagesToDelete.includes(image.id) ? (
-                                    <Plus className="h-4 w-4" />
-                                  ) : (
-                                    <Trash className="h-4 w-4" />
-                                  )}
-                                </button>
-                              </div>
-                            ))}
+                    {productData && (
+                      <div className="p-4 bg-zinc-800/50 rounded-md border border-zinc-700">
+                        <h3 className="text-sm font-medium mb-2">Product Information</h3>
+                        <div className="grid grid-cols-2 gap-2 text-sm">
+                          <div>
+                            <span className="text-zinc-400">ID:</span> <span>{productData.id}</span>
+                          </div>
+                          <div>
+                            <span className="text-zinc-400">Status:</span>{" "}
+                            <span className={productData.status === "Available" ? "text-green-500" : "text-red-500"}>
+                              {productData.status}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="text-zinc-400">Quantity:</span> <span>{productData.quantity}</span>
+                          </div>
+                          <div>
+                            <span className="text-zinc-400">Images:</span>{" "}
+                            <span>{existingImages.length - imagesToDelete.length}</span>
                           </div>
                         </div>
-                      )}
+                      </div>
+                    )}
+                  </div>
 
-                      {/* Upload New Images */}
+                  {/* Image Management Section */}
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Product Images</label>
+
                       <div
                         className="border-2 border-dashed border-zinc-700 rounded-lg p-4 text-center cursor-pointer hover:border-zinc-500 transition-colors"
                         onClick={() => fileInputRef.current?.click()}
@@ -435,7 +551,6 @@ export default function EditProductPage() {
                         <input
                           ref={fileInputRef}
                           type="file"
-                          name="images"
                           accept="image/*"
                           multiple
                           className="hidden"
@@ -448,41 +563,121 @@ export default function EditProductPage() {
                       </div>
                     </div>
 
-                    {/* New Images Preview */}
-                    {imagePreviewUrls.length > 0 && (
-                      <div className="space-y-2">
-                        <label className="block text-sm font-medium">New Images ({imagePreviewUrls.length})</label>
+                    <div className="space-y-2 h-full">
+                      <div className="flex justify-between items-center">
+                        <label className="block text-sm font-medium">
+                          Existing Images ({existingImages.length - imagesToDelete.length}/{existingImages.length})
+                        </label>
+                        {imagesToDelete.length > 0 && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="h-7 px-2 text-xs border-zinc-700 hover:bg-green-600 hover:text-white"
+                            onClick={() => setImagesToDelete([])}
+                          >
+                            Restore All
+                          </Button>
+                        )}
+                      </div>
 
-                        <div className="grid grid-cols-3 gap-3">
-                          {imagePreviewUrls.map((url, index) => (
-                            <div key={index} className="relative group">
-                              <div className="aspect-square relative rounded-md overflow-hidden border border-zinc-700">
+                      <div className="space-y-4 max-h-[calc(150vh)] overflow-y-auto pr-2">
+                        {existingImages.map((img) => (
+                          <div
+                            key={img.id}
+                            className={`relative group border border-zinc-700 rounded-md p-3 ${
+                              isImageMarkedForDeletion(img.id) ? "opacity-50 bg-red-900/20" : ""
+                            }`}
+                          >
+                            <div className="flex gap-3">
+                              <div className="w-24 h-24 relative rounded-md overflow-hidden border border-zinc-700 flex-shrink-0">
                                 <Image
-                                  src={url || "/placeholder.svg"}
-                                  alt={`Preview ${index + 1}`}
+                                  src={img.url || "/placeholder.svg"}
+                                  alt={img.name}
                                   fill
                                   className="object-cover"
                                 />
                               </div>
-                              <button
-                                type="button"
-                                className="absolute top-1 right-1 bg-red-600 rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                                onClick={() => removeNewImage(index)}
-                              >
-                                <X className="h-4 w-4" />
-                              </button>
+                              <div className="flex-1">
+                                <label className="block text-sm font-medium mb-1">Image Description</label>
+                                <textarea
+                                  className="w-full rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm"
+                                  rows={3}
+                                  placeholder="Describe this image..."
+                                  value={img.description}
+                                  onChange={(e) => updateExistingImageDescription(img.id, e.target.value)}
+                                  disabled={isImageMarkedForDeletion(img.id)}
+                                />
+                              </div>
                             </div>
-                          ))}
 
-                          <div
-                            className="aspect-square flex items-center justify-center border border-dashed border-zinc-700 rounded-md cursor-pointer hover:border-zinc-500 transition-colors"
-                            onClick={() => fileInputRef.current?.click()}
-                          >
-                            <Plus className="h-8 w-8 text-zinc-500" />
+                            {isImageMarkedForDeletion(img.id) ? (
+                              <Button
+                                type="button"
+                                className="absolute top-2 right-2 bg-green-600 rounded-full p-1"
+                                onClick={() => unmarkExistingImageForDeletion(img.id)}
+                              >
+                                <Plus className="h-4 w-4" />
+                              </Button>
+                            ) : (
+                              <Button
+                                type="button"
+                                className="absolute top-2 right-2 bg-red-600 rounded-full p-1"
+                                onClick={() => markExistingImageForDeletion(img.id)}
+                              >
+                                <Trash className="h-4 w-4" />
+                              </Button>
+                            )}
                           </div>
+                        ))}
+
+                        {newImages.length > 0 && (
+                          <div className="mt-6">
+                            <label className="block text-sm font-medium mb-2">New Images ({newImages.length})</label>
+
+                            {newImages.map((img, index) => (
+                              <div key={index} className="relative group border border-zinc-700 rounded-md p-3 mb-4">
+                                <div className="flex gap-3">
+                                  <div className="w-24 h-24 relative rounded-md overflow-hidden border border-zinc-700 flex-shrink-0">
+                                    <Image
+                                      src={img.previewUrl || "/placeholder.svg"}
+                                      alt={`Preview ${index + 1}`}
+                                      fill
+                                      className="object-cover"
+                                    />
+                                  </div>
+                                  <div className="flex-1">
+                                    <label className="block text-sm font-medium mb-1">Image Description</label>
+                                    <textarea
+                                      className="w-full rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm"
+                                      rows={3}
+                                      placeholder="Describe this image..."
+                                      value={img.description}
+                                      onChange={(e) => updateNewImageDescription(index, e.target.value)}
+                                    />
+                                  </div>
+                                </div>
+                                <button
+                                  type="button"
+                                  className="absolute top-2 right-2 bg-red-600 rounded-full p-1"
+                                  onClick={() => removeNewImage(index)}
+                                >
+                                  <X className="h-4 w-4" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        <div
+                          className="flex items-center justify-center border border-dashed border-zinc-700 rounded-md p-4 cursor-pointer hover:border-zinc-500 transition-colors"
+                          onClick={() => fileInputRef.current?.click()}
+                        >
+                          <Plus className="h-6 w-6 text-zinc-500 mr-2" />
+                          <span className="text-zinc-400">Add more images</span>
                         </div>
                       </div>
-                    )}
+                    </div>
                   </div>
                 </div>
 
@@ -499,7 +694,17 @@ export default function EditProductPage() {
                   </Button>
 
                   <Button type="submit" className="bg-red-600 hover:bg-red-700" disabled={isSubmitting}>
-                    {isSubmitting ? "Updating Product..." : "Update Product"}
+                    {isSubmitting ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-2"></div>
+                        Updating...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="h-4 w-4 mr-2" />
+                        Save Changes
+                      </>
+                    )}
                   </Button>
                 </div>
               </form>
@@ -507,6 +712,20 @@ export default function EditProductPage() {
           </div>
         </div>
       </div>
+
+      {/* Manage Categories Modal */}
+      <ManageCategoriesModal
+        open={manageCategoriesModalOpen}
+        onOpenChange={setManageCategoriesModalOpen}
+        onCategoriesUpdated={handleCategoriesUpdated}
+      />
+
+      {/* Manage Warehouses Modal */}
+      <ManageWarehousesModal
+        open={manageWarehousesModalOpen}
+        onOpenChange={setManageWarehousesModalOpen}
+        onWarehousesUpdated={handleWarehousesUpdated}
+      />
     </div>
   )
 }

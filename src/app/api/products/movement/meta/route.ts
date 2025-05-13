@@ -6,51 +6,32 @@ export async function GET(req: NextRequest) {
   try {
     const db = await connectDB()
 
+    /* ---------- 2) ดึงค่า ENUM ของ category ---------- */
     const [catRows] = await db.query<RowDataPacket[]>(
-      `SHOW COLUMNS FROM products LIKE 'category'`,
+      `SELECT name FROM categories ORDER BY sort_order`,
     )
-
-    let categoryEnum: string[] = []
-    if (catRows.length) {
-      const enumStr = catRows[0].Type as string
-      const m = enumStr.match(/^enum\((.*)\)$/)
-      if (m) {
-        categoryEnum = m[1]
-          .split(",")
-          .map((v) => v.replace(/'/g, "").trim())
-      }
-    }
-
-    const [statRows] = await db.query<RowDataPacket[]>(
-      `SHOW COLUMNS FROM products LIKE 'status'`,
-    )
-
-    let statusEnum: string[] = []
-    if (statRows.length) {
-      const enumStr = statRows[0].Type as string
-      const m = enumStr.match(/^enum\((.*)\)$/)
-      if (m) {
-        statusEnum = m[1]
-          .split(",")
-          .map((v) => v.replace(/'/g, "").trim())
-      }
-    }
-
+    const categoryEnum = catRows.map((r) => r.name as string)
     const [pubRows] = await db.query<RowDataPacket[]>(`SELECT name FROM publishers`)
     const publishers = pubRows.map((r) => r.name as string)
 
+    // Fetch available warehouses (where productID is null)
+    const [warehouseRows] = await db.query<RowDataPacket[]>(
+      `SELECT location, capacity FROM warehouse WHERE productID IS NULL`,
+    )
+
+    const availableWarehouses = warehouseRows.map((row) => ({
+      location: row.location,
+      capacity: row.capacity,
+    }))
 
     return NextResponse.json({
       success: true,
       categoryEnum,
-      statusEnum,
       publishers,
+      availableWarehouses,
     })
   } catch (error) {
     console.error("Error fetching metadata:", error)
-    return NextResponse.json(
-      { success: false, error: "Failed to fetch metadata" },
-      { status: 500 },
-    )
+    return NextResponse.json({ success: false, error: "Failed to fetch metadata" }, { status: 500 })
   }
 }

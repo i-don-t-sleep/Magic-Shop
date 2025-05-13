@@ -3,6 +3,7 @@ import * as React from "react"
 
 const buttonVariants = {
   variant: {
+    noting: "focus-visible:outline-red-600 rounded-xl duration-100",
     default: "bg-gray-500 text-white hover:bg-magic-red focus-visible:outline-red-600 rounded-xl duration-100",
     outline: "text-white bg-gradient-to-b from-[#2a2a2a] to-[#1a1a1a] hover:from-gray-700 hover:to-gray-500 hover:bg-gradient-to-b transition-all duration-100 rounded-xl",
     outlineActive: "text-white bg-gradient-to-b from-[#e8443c] to-[#9f0802] transition-all duration-100 rounded-xl",
@@ -14,6 +15,7 @@ const buttonVariants = {
     outStock: "bg-magic-red rounded-sm hover:bg-gray-800 transition-all duration-10",
   },
   size: {
+    noting: "h-10 px-4 py-2",
     default: "h-10 px-4 py-2",
     sm: "h-9 rounded-md px-3",
     lg: "h-11 rounded-md px-8",
